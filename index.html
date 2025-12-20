@@ -293,7 +293,7 @@
         .grid-container {
             flex-grow: 1; padding: 10px 15px;
             display: grid; grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(4, 1fr);
+            grid-auto-rows: minmax(80px, 1fr);
             gap: 12px; overflow-y: auto;
         }
         .form-btn {
@@ -467,12 +467,15 @@
         <button class="form-btn btn-intro" id="btn-intro" onclick="handleSectionClick('btn-intro', 'Intro')">Intro</button>
         <button class="form-btn btn-verse" id="btn-v1" onclick="handleSectionClick('btn-v1', 'Verse 1')">Verse 1</button>
         <button class="form-btn btn-verse" id="btn-v2" onclick="handleSectionClick('btn-v2', 'Verse 2')">Verse 2</button>
-        <button class="form-btn btn-chorus" id="btn-c1" onclick="handleSectionClick('btn-c1', 'Chorus')">Chorus</button>
+        <button class="form-btn btn-chorus" id="btn-c1" onclick="handleSectionClick('btn-c1', 'Chorus 1')">Chorus 1</button>
         <button class="form-btn btn-chorus" id="btn-c2" onclick="handleSectionClick('btn-c2', 'Chorus 2')">Chorus 2</button>
+        <button class="form-btn btn-chorus" id="btn-c3" onclick="handleSectionClick('btn-c3', 'Chorus 3')">Chorus 3</button>
         <button class="form-btn btn-bridge" id="btn-br" onclick="handleSectionClick('btn-br', 'Bridge')">Bridge</button>
         <button class="form-btn btn-verse" id="btn-solo" onclick="handleSectionClick('btn-solo', 'Solo')">Solo</button>
         <button class="form-btn btn-outro" id="btn-out" onclick="handleSectionClick('btn-out', 'Outro')">Outro</button>
-        <button class="form-btn btn-intro" id="btn-pre" onclick="handleSectionClick('btn-pre', 'Pre-Ch')">Pre-Ch</button>
+        <button class="form-btn btn-intro" id="btn-pre1" onclick="handleSectionClick('btn-pre1', 'Pre-Ch 1')">Pre-Ch 1</button>
+        <button class="form-btn btn-intro" id="btn-pre2" onclick="handleSectionClick('btn-pre2', 'Pre-Ch 2')">Pre-Ch 2</button>
+        <button class="form-btn btn-intro" id="btn-pre3" onclick="handleSectionClick('btn-pre3', 'Pre-Ch 3')">Pre-Ch 3</button>
         <button class="form-btn btn-custom" id="btn-cust" onclick="handleSectionClick('btn-cust', 'Custom')">
             <i class="fas fa-plus"></i>&nbsp;Add
         </button>
@@ -697,6 +700,10 @@
         }
 
         async function saveSection(buttonId, entry) {
+            if (!currentSongId) {
+                setSheetStatus('error', 'Pick or upload a song first');
+                return;
+            }
             const payload = {
                 button_id: buttonId,
                 label: entry.label || buttonId,
@@ -707,7 +714,7 @@
             };
             const { error } = await supabaseClient
                 .from('sections')
-                .upsert(payload, { onConflict: 'button_id' });
+                .upsert(payload, { onConflict: 'video_id,button_id' });
             if (error) throw error;
         }
 
@@ -802,7 +809,7 @@
             setSheetStatus('loading', 'Saving sections…');
             const { error } = await supabaseClient
                 .from('sections')
-                .upsert(rows, { onConflict: 'button_id' });
+                .upsert(rows, { onConflict: 'video_id,button_id' });
             if (error) {
                 console.warn(error);
                 setSheetStatus('error', error.message);
