@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JamSnap - Auto Loop</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --neon-green: #00ff9d;
+            --neon-pink: #ff00cc;
+            --neon-blue: #00f3ff;
+            --neon-purple: #bd00ff;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-color);
+            color: #fff;
+            font-family: 'Nunito', sans-serif;
+            margin: 0; padding: 0;
+            height: 100vh;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Main app shell must flex to let grid fill remaining space */
+        #appShell {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* SHEET STATUS */
+        .sheet-status {
+            position: fixed;
+            top: 10px; right: 10px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--neon-blue);
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            z-index: 20;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sheet-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--neon-blue);
+            box-shadow: 0 0 6px var(--neon-blue);
+        }
+        .sheet-status.error .sheet-dot { background: #ff6b6b; box-shadow: 0 0 8px #ff6b6b; }
+        .sheet-status.ready .sheet-dot { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
+
+        .hidden { display: none !important; }
+
+        /* AUTH STATUS */
+        .auth-status {
+            position: fixed;
+            top: 10px; left: 10px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            z-index: 20;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .auth-status button {
+            background: var(--neon-blue);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 8px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .auth-status .secondary {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+        }
+        /* Hide top bar auth buttons; account handled in modal */
+        .auth-status button { display: none; }
+
+        /* FULL PAGE AUTH GATE */
+        .auth-gate {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle at 20% 20%, #1f2c4f, #0a0a1a 55%);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 300;
+            padding: 20px;
+        }
+        .auth-gate-card {
+            width: 360px; max-width: 95%;
+            background: #111526;
+            border: 1px solid #2a2f4d;
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.55);
+        }
+        .auth-gate-card h2 {
+            margin: 0 0 12px 0;
+            font-family: 'Fredoka One', cursive;
+            letter-spacing: 0.4px;
+        }
+        .auth-gate-card label {
+            display: block;
+            font-size: 0.9rem;
+            color: #cfd5ff;
+            margin-top: 10px;
+        }
+
+        .fancy-select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid #2f3a5a;
+            background: linear-gradient(135deg, #1a223b, #0f162b);
+            color: #e7ecff;
+            font-weight: 700;
+            box-shadow: 0 0 12px rgba(0,243,255,0.2);
+        }
+        .auth-gate-card input {
+            width: 100%;
+            margin-top: 6px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #2f3a5a;
+            background: #0a0f1f;
+            color: #fff;
+        }
+        .auth-gate-actions {
+            display: flex; gap: 10px; margin-top: 16px;
+        }
+        .auth-gate button {
+            flex: 1;
+            padding: 12px 0;
+            border: none;
+            border-radius: 10px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .auth-gate .primary { background: var(--neon-green); color: #0a0a1a; }
+        .auth-gate .secondary { background: #1d243b; color: #d8e0ff; border: 1px solid #2f3a5a; }
+        .auth-gate .link-row {
+            margin-top: 12px; display: flex; justify-content: space-between; color: #7ea7ff; font-size: 0.9rem; cursor: pointer;
+        }
+
+        /* ACTIONS STACK */
+        .actions-stack {
+            margin-top: 70px;
+            padding: 0 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            z-index: 12;
+        }
+
+        /* ACTIONS STACK */
+        .sheet-actions {
+            display: flex; gap: 8px; align-items: center;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid #333;
+            padding: 8px 10px;
+            border-radius: 12px;
+            z-index: 12;
+            flex-wrap: wrap;
+        }
+        .sheet-actions input {
+            flex: 1;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid #444;
+            background: #111;
+            color: #fff;
+        }
+        .sheet-actions button {
+            background: var(--neon-blue);
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .sheet-actions button.secondary {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+        }
+
+        /* TIMELINE */
+        .timeline-container {
+            padding: 20px 15px 5px 15px;
+            background: linear-gradient(180deg, #101018 0%, var(--bg-color) 100%);
+            position: relative;
+        }
+        .time-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #cfe8ff;
+            margin-top: 6px;
+        }
+        .time-row .time-label {
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .controls-disabled {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+        #audioPlayer { display: none; }
+
+        input[type=range] {
+            -webkit-appearance: none; appearance: none; width: 100%; background: transparent; position: relative; z-index: 5;
+        }
+        input[type=range]:focus { outline: none; }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 12px; cursor: pointer;
+            background: #333; border-radius: 25px;
+            border: 2px solid var(--neon-blue);
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 50px; width: 50px; margin-top: -20px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M10,10 Q50,-10 90,10 Q100,50 50,110 Q0,50 10,10 Z' fill='%2300ff9d' stroke='%23ffffff' stroke-width='3'/%3E%3Cpath d='M50,25 C54,25 57,28 57,32 L57,55 C57,59 54,62 50,62 C46,62 43,59 43,55 L43,32 C43,28 46,25 50,25 Z M40,55 C40,60 44,65 50,65 C56,65 60,60 60,55 M50,65 L50,75 M45,75 L55,75' stroke='%23000' stroke-width='4' fill='none'/%3E%3C/svg%3E");
+            background-size: contain; background-repeat: no-repeat; background-position: center;
+            cursor: pointer; filter: drop-shadow(0 0 5px var(--neon-green));
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active { transform: scale(1.2); }
+
+        /* Markers & Loop Range */
+        .markers-container { position: relative; height: 10px; margin-top: 5px; width: 100%; }
+        .marker {
+            position: absolute; width: 0; height: 0;
+            border-left: 6px solid transparent; border-right: 6px solid transparent;
+            border-bottom: 10px solid var(--neon-pink);
+            transform: translateX(-50%); pointer-events: none;
+        }
+        
+        /* The Loop Highlight Bar */
+        #activeLoopRange {
+            position: absolute;
+            top: 22px; /* Aligns with track */
+            height: 8px;
+            background: var(--neon-pink);
+            opacity: 0;
+            pointer-events: none;
+            border-radius: 4px;
+            transition: opacity 0.3s;
+            box-shadow: 0 0 10px var(--neon-pink);
+            z-index: 2; /* Below thumb, above track bg */
+        }
+
+        /* CONTROLS */
+        .controls-mid {
+            display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;
+        }
+        .tempo-btn {
+            background: radial-gradient(circle, #333, #111); border: 3px solid var(--neon-blue);
+            width: 80px; height: 80px; border-radius: 50%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4); cursor: pointer; user-select: none;
+        }
+        .tempo-btn:active { transform: scale(0.95); background: var(--neon-blue); color: #000; }
+        .bpm-display { font-family: 'Fredoka One', cursive; font-size: 1.5rem; line-height: 1; }
+        .bpm-label { font-size: 0.6rem; text-transform: uppercase; font-weight: 700; }
+
+        .play-btn { font-size: 3rem; color: white; background: none; border: none; cursor: pointer; }
+        
+        .loop-btn {
+            background: #222; border: 2px solid #555; color: #777;
+            width: 70px; height: 50px; border-radius: 15px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .loop-btn.active { border-color: var(--neon-green); color: var(--neon-green); background: rgba(0, 255, 157, 0.1); }
+        .loop-count { font-family: 'Fredoka One', cursive; font-size: 1.2rem; }
+        .loop-label { font-size: 0.5rem; text-transform: uppercase; }
+
+        /* GRID */
+        .grid-container {
+            flex-grow: 1; padding: 10px 15px;
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 12px; overflow-y: auto;
+        }
+        .form-btn {
+            border: none; border-radius: 12px; font-family: 'Fredoka One', cursive; font-size: 1rem;
+            color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            cursor: pointer; position: relative; transition: transform 0.1s;
+        }
+        .form-btn:active { transform: scale(0.90); }
+        .form-btn.logged::after {
+            content: '\f00c'; font-family: "Font Awesome 6 Free"; font-weight: 900;
+            position: absolute; top: 5px; right: 5px; font-size: 0.8rem;
+            color: white; background: rgba(0,0,0,0.3); border-radius: 50%;
+            width: 15px; height: 15px; display: flex; align-items: center; justify-content: center;
+        }
+
+        .btn-intro { background: linear-gradient(135deg, #FF9966, #FF5E62); }
+        .btn-verse { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .btn-chorus { background: linear-gradient(135deg, #f093fb, #f5576c); border: 2px solid white; }
+        .btn-bridge { background: linear-gradient(135deg, #89f7fe, #66a6ff); }
+        .btn-outro { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+        .btn-custom { background: linear-gradient(135deg, #43e97b, #38f9d7); color: #1a1a2e; }
+
+        /* LYRICS */
+        .lyrics-drawer {
+            background: #252525; border-top-left-radius: 20px; border-top-right-radius: 20px;
+            height: 40px; text-align: center; color: #aaa; box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+        }
+        .drag-handle { width: 40px; height: 5px; background: #555; border-radius: 5px; margin: 10px auto; }
+
+        /* AUTH FLOATING BUTTON & MODAL */
+        .auth-fab {
+            position: fixed;
+            bottom: 18px; right: 18px;
+            width: 56px; height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+            color: #0a0a1a;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 18px rgba(0, 243, 255, 0.5);
+            border: 2px solid #111;
+            cursor: pointer;
+            z-index: 30;
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .auth-fab:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(189, 0, 255, 0.55); }
+        .auth-fab:active { transform: scale(0.96); }
+
+        .auth-modal-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center; justify-content: center;
+            z-index: 40;
+        }
+        .auth-modal {
+            background: #111526;
+            border: 1px solid #2a2f4d;
+            border-radius: 16px;
+            padding: 18px;
+            width: 320px;
+            max-width: calc(100% - 32px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+        }
+        .auth-modal h3 {
+            margin: 0 0 10px 0;
+            font-family: 'Fredoka One', cursive;
+            letter-spacing: 0.3px;
+        }
+        .auth-modal label {
+            font-size: 0.85rem;
+            color: #cfd5ff;
+        }
+        .auth-modal input {
+            width: 100%;
+            margin: 6px 0 12px 0;
+            padding: 9px 10px;
+            border-radius: 10px;
+            border: 1px solid #2f3a5a;
+            background: #0a0f1f;
+            color: #fff;
+        }
+        .auth-row {
+            display: flex; gap: 8px; margin-top: 6px;
+        }
+        .auth-modal button {
+            flex: 1;
+            padding: 10px 0;
+            border: none;
+            border-radius: 10px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .auth-primary { background: var(--neon-green); color: #0a0a1a; }
+        .auth-secondary { background: #1d243b; color: #d8e0ff; border: 1px solid #2f3a5a; }
+        .auth-links { margin-top: 10px; display: flex; justify-content: space-between; font-size: 0.85rem; color: #7ea7ff; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-gate" id="authGate">
+        <div class="auth-gate-card">
+            <h2 id="authGateTitle">Sign in</h2>
+            <label for="gateEmail">Email</label>
+            <input type="email" id="gateEmail" placeholder="you@example.com">
+            <label for="gatePassword">Password</label>
+            <input type="password" id="gatePassword" placeholder="••••••••">
+            <div class="auth-gate-actions">
+                <button class="secondary" type="button" id="authGateToggle">Need an account?</button>
+                <button class="primary" type="button" id="authGateSubmit">Sign in</button>
+            </div>
+            <div class="link-row">
+                <span id="authGateReset">Reset password</span>
+                <span id="authGateStatus"></span>
+            </div>
+        </div>
+    </div>
+
+    <div id="appShell">
+    <div class="sheet-status" id="sheetStatus">
+        <span class="sheet-dot"></span>
+        <span id="sheetStatusText">Waiting for sheet…</span>
+    </div>
+    <div class="auth-status" id="authStatus">
+        <span id="authStateText">Signed out</span>
+        <button id="authOpenBtn" type="button">Sign in</button>
+        <button id="authSignOutBtn" class="secondary" type="button" style="display:none;">Sign out</button>
+    </div>
+
+    <div class="actions-stack">
+        <div class="sheet-actions">
+            <input id="songNameInput" type="text" placeholder="Song name" style="flex:2; min-width:160px;" />
+            <input id="songArtistInput" type="text" placeholder="Artist" style="flex:1.5; min-width:140px;" />
+            <input id="audioFileInput" type="file" accept="audio/mpeg" style="flex:1 0 auto; min-width:160px; color:#fff;">
+            <button onclick="uploadAudioFile()" style="flex:0 0 auto;">Upload & Set</button>
+            <button class="secondary" onclick="pushSectionsToSheet()">Save sections</button>
+        </div>
+        <div class="sheet-actions">
+            <select id="videoSelect" class="fancy-select">
+                <option value="">Saved songs…</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="timeline-container">
+        <audio id="audioPlayer" preload="auto" style="display:none"></audio>
+        <div class="time-row">
+            <span class="time-label" id="currentTimeLabel">0:00</span>
+            <span class="time-label" id="durationLabel">0:00</span>
+        </div>
+        <div id="activeLoopRange"></div>
+        <input type="range" min="0" max="100" value="0" id="videoTimeline">
+        <div class="markers-container" id="markersArea"></div>
+    </div>
+
+    <div class="controls-mid">
+        <div class="tempo-btn" id="tapBtn" onclick="handleTap()">
+            <span class="bpm-display" id="bpmDisplay">--</span>
+            <span class="bpm-label">Tap Me</span>
+        </div>
+        <button class="play-btn" onclick="togglePlay()">
+            <i class="fas fa-play-circle" id="playIcon"></i>
+        </button>
+        <div class="loop-btn" id="loopBtn" onclick="toggleLoop()">
+            <span class="loop-count" id="loopText"><i class="fas fa-ban"></i></span>
+            <span class="loop-label">Loops</span>
+        </div>
+    </div>
+
+    <div class="grid-container">
+        <button class="form-btn btn-intro" id="btn-intro" onclick="handleSectionClick('btn-intro', 'Intro')">Intro</button>
+        <button class="form-btn btn-verse" id="btn-v1" onclick="handleSectionClick('btn-v1', 'Verse 1')">Verse 1</button>
+        <button class="form-btn btn-verse" id="btn-v2" onclick="handleSectionClick('btn-v2', 'Verse 2')">Verse 2</button>
+        <button class="form-btn btn-chorus" id="btn-c1" onclick="handleSectionClick('btn-c1', 'Chorus')">Chorus</button>
+        <button class="form-btn btn-chorus" id="btn-c2" onclick="handleSectionClick('btn-c2', 'Chorus 2')">Chorus 2</button>
+        <button class="form-btn btn-bridge" id="btn-br" onclick="handleSectionClick('btn-br', 'Bridge')">Bridge</button>
+        <button class="form-btn btn-verse" id="btn-solo" onclick="handleSectionClick('btn-solo', 'Solo')">Solo</button>
+        <button class="form-btn btn-outro" id="btn-out" onclick="handleSectionClick('btn-out', 'Outro')">Outro</button>
+        <button class="form-btn btn-intro" id="btn-pre" onclick="handleSectionClick('btn-pre', 'Pre-Ch')">Pre-Ch</button>
+        <button class="form-btn btn-custom" id="btn-cust" onclick="handleSectionClick('btn-cust', 'Custom')">
+            <i class="fas fa-plus"></i>&nbsp;Add
+        </button>
+    </div>
+
+    <div class="lyrics-drawer">
+        <div class="drag-handle"></div>
+        <small>Lyrics & Notes</small>
+    </div>
+
+    <div class="auth-fab" id="authFab" title="Account">
+        <i class="fas fa-user-astronaut"></i>
+    </div>
+    <div class="auth-modal-backdrop" id="authModal">
+        <div class="auth-modal">
+            <h3>Account</h3>
+            <label for="authEmail">Email</label>
+            <input type="email" id="authEmail" placeholder="you@example.com">
+            <label for="authPassword">Password</label>
+            <input type="password" id="authPassword" placeholder="••••••••">
+            <div class="auth-row">
+                <button class="auth-secondary" type="button" onclick="closeAuthModal()">Close</button>
+                <button class="auth-primary" type="button" onclick="handleSignIn()">Sign In</button>
+            </div>
+            <div class="auth-links">
+                <span onclick="handleReset()">Reset password</span>
+                <span onclick="handleRegister()">Create account</span>
+            </div>
+            <div class="auth-row" style="margin-top:10px;">
+                <button class="secondary" type="button" onclick="handleSignOut()">Sign out</button>
+            </div>
+        </div>
+    </div>
+    </div> <!-- end appShell -->
+
+    <script>
+        // --- CONFIGURE SUPABASE HERE ---
+        const SUPABASE_URL = 'https://ckunukizucqngibnfwcn.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrdW51a2l6dWNxbmdpYm5md2NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4MzYxNjksImV4cCI6MjA3OTQxMjE2OX0.PYbmARvtxkb086RFitejG7almxGWpmSgJfVk0pB1i8I';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        var player;
+        var videoDuration = 0;
+        var updateTimer;
+        
+        // --- LOOP STATE ---
+        // 0=Off, 1=1x, 2=2x, 3=4x, 4=Inf
+        let loopSetting = 0; 
+        let activeSection = null; // { start: 10, end: 20, remainingLoops: 2 }
+        let savedSections = {}; // { 'btn-intro': { start, end, label, note } }
+        let pendingMarkers = [];
+        let currentSongId = null;
+        let currentVideoMeta = {}; // { bpm, note }
+        let authGateMode = 'signin'; // 'signin' | 'signup'
+
+        const appShell = document.getElementById('appShell');
+        const authGate = document.getElementById('authGate');
+        const gateEmail = document.getElementById('gateEmail');
+        const gatePassword = document.getElementById('gatePassword');
+        const authGateSubmit = document.getElementById('authGateSubmit');
+        const authGateToggle = document.getElementById('authGateToggle');
+        const authGateTitle = document.getElementById('authGateTitle');
+        const authGateStatus = document.getElementById('authGateStatus');
+        const authGateReset = document.getElementById('authGateReset');
+        const sheetStatus = document.getElementById('sheetStatus');
+        const sheetStatusText = document.getElementById('sheetStatusText');
+        const songNameInput = document.getElementById('songNameInput');
+        const songArtistInput = document.getElementById('songArtistInput');
+        const videoSelect = document.getElementById('videoSelect');
+        const audioFileInput = document.getElementById('audioFileInput');
+        const authFab = document.getElementById('authFab');
+        const authModal = document.getElementById('authModal');
+        const authEmail = document.getElementById('authEmail');
+        const authPassword = document.getElementById('authPassword');
+        const authStateText = document.getElementById('authStateText');
+        const authOpenBtn = document.getElementById('authOpenBtn');
+        const authSignOutBtn = document.getElementById('authSignOutBtn');
+        const currentTimeLabel = document.getElementById('currentTimeLabel');
+        const durationLabel = document.getElementById('durationLabel');
+        const timeline = document.getElementById('videoTimeline');
+        const loopRangeBar = document.getElementById('activeLoopRange');
+        const playButton = document.querySelector('.play-btn');
+
+        function setSheetStatus(state, text) {
+            sheetStatus.classList.remove('error', 'ready');
+            if (state === 'ready') sheetStatus.classList.add('ready');
+            if (state === 'error') sheetStatus.classList.add('error');
+            sheetStatusText.textContent = text;
+        }
+
+        function setControlsEnabled(enabled) {
+            const disabledClass = 'controls-disabled';
+            if (timeline) {
+                timeline.disabled = !enabled;
+                timeline.classList.toggle(disabledClass, !enabled);
+            }
+            const tc = document.querySelector('.timeline-container');
+            if (tc) tc.classList.toggle(disabledClass, !enabled);
+            if (playButton) playButton.classList.toggle(disabledClass, !enabled);
+            if (typeof loopBtn !== 'undefined' && loopBtn) loopBtn.classList.toggle(disabledClass, !enabled);
+        }
+
+        function normalizeSongId(raw) {
+            const parsed = (raw || '').trim();
+            return parsed || null;
+        }
+
+        function makeSongId(name, artist) {
+            const base = `${(name || '').trim()}-${(artist || '').trim()}`.toLowerCase();
+            return base.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || null;
+        }
+
+        function showAppShell() { appShell.classList.remove('hidden'); authGate.classList.add('hidden'); }
+        function showAuthGate() { appShell.classList.add('hidden'); authGate.classList.remove('hidden'); }
+
+        function setAuthGateMode(mode) {
+            authGateMode = mode;
+            authGateTitle.textContent = mode === 'signin' ? 'Sign in' : 'Create account';
+            authGateSubmit.textContent = mode === 'signin' ? 'Sign in' : 'Sign up';
+            authGateToggle.textContent = mode === 'signin' ? 'Need an account?' : 'Have an account?';
+            authGateStatus.textContent = '';
+        }
+
+        function formatTime(sec) {
+            if (!Number.isFinite(sec) || sec < 0) return '0:00';
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function setAudioSource(url) {
+            if (!player) return;
+            player.src = url || '';
+            try { player.load(); } catch (e) {}
+            setControlsEnabled(!!url);
+            if (!url) {
+                if (currentTimeLabel) currentTimeLabel.textContent = '0:00';
+                if (durationLabel) durationLabel.textContent = '0:00';
+                if (timeline) timeline.value = 0;
+            }
+        }
+
+        function setAudioAndSave(url) {
+            setAudioSource(url);
+            if (player && player.play) {
+                try { player.play(); } catch (e) {}
+            }
+            setControlsEnabled(!!url);
+            return saveVideoMeta({ audioUrl: url });
+        }
+
+        function parseNoteMeta(noteVal) {
+            if (!noteVal) return {};
+            try {
+                const parsed = JSON.parse(noteVal);
+                return typeof parsed === 'object' && parsed !== null ? parsed : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        async function saveVideoMeta(updates) {
+            if (!currentSongId) return;
+            const merged = { ...(currentVideoMeta || {}), ...updates };
+            currentVideoMeta = merged;
+            const note = JSON.stringify(merged);
+            const { error } = await supabaseClient
+                .from('videos')
+                .upsert({
+                    video_id: currentSongId,
+                    note,
+                    title: merged.title || currentVideoMeta.title || currentSongId,
+                    audio_url: merged.audioUrl || null
+                }, { onConflict: 'video_id' });
+            if (error) throw error;
+        }
+
+        async function fetchVideoMeta(videoId) {
+            const { data, error } = await supabaseClient
+                .from('videos')
+                .select('note,title,audio_url')
+                .eq('video_id', videoId)
+                .limit(1);
+            if (error) {
+                console.warn(error);
+                return {};
+            }
+            const meta = parseNoteMeta(data?.[0]?.note);
+            if (data?.[0]?.title) meta.title = data[0].title;
+            if (!meta.audioUrl && data?.[0]?.audio_url) meta.audioUrl = data[0].audio_url;
+            return meta;
+        }
+
+        function applyBpmFromMeta() {
+            if (currentVideoMeta && currentVideoMeta.bpm) {
+                bpmDisplay.innerText = Math.round(currentVideoMeta.bpm);
+            }
+        }
+
+        async function loadVideoById(videoId) {
+            const normalized = normalizeSongId(videoId);
+            if (!normalized) {
+                setSheetStatus('error', 'Pick a song');
+                return;
+            }
+            currentSongId = normalized;
+            currentVideoMeta = await fetchVideoMeta(normalized);
+            applyBpmFromMeta();
+            const url = currentVideoMeta.audioUrl || '';
+            if (url) {
+                setAudioSource(url);
+                setControlsEnabled(true);
+            } else {
+                setAudioSource('');
+                setControlsEnabled(false);
+                setSheetStatus('error', 'This song has no audio yet. Upload & Set an MP3.');
+            }
+            await loadSectionsForVideo(normalized);
+            songNameInput.value = currentVideoMeta.title || normalized;
+            songArtistInput.value = currentVideoMeta.artist || '';
+            setSheetStatus('ready', 'Song loaded');
+        }
+
+        async function saveSection(buttonId, entry) {
+            const payload = {
+                button_id: buttonId,
+                label: entry.label || buttonId,
+                start_seconds: entry.start,
+                end_seconds: entry.end ?? calculateEndTime(entry.start),
+                note: entry.note || '',
+                video_id: currentSongId
+            };
+            const { error } = await supabaseClient
+                .from('sections')
+                .upsert(payload, { onConflict: 'button_id' });
+            if (error) throw error;
+        }
+
+        function applyVideoIdFromInput() {
+            // deprecated in favor of upload flow
+        }
+
+        async function saveVideoId(videoId, title, artist) {
+            setSheetStatus('loading', 'Saving song…');
+            const normalized = normalizeSongId(videoId);
+            if (!normalized) {
+                setSheetStatus('error', 'Enter a Song ID');
+                return;
+            }
+            const merged = { ...(currentVideoMeta || {}), artist: artist || '', title: title || normalized };
+            const note = JSON.stringify(merged);
+            const { error } = await supabaseClient
+                .from('videos')
+                .upsert({
+                    video_id: normalized,
+                    title: title || normalized,
+                    note,
+                    audio_url: merged.audioUrl || null
+                }, { onConflict: 'video_id' });
+            if (error) {
+                console.warn(error);
+                setSheetStatus('error', error.message);
+            } else {
+                setSheetStatus('ready', 'Song saved');
+                refreshVideoListSelection(normalized);
+            }
+        }
+
+        async function uploadAudioFile() {
+            const file = audioFileInput.files?.[0];
+            if (!file) {
+                setSheetStatus('error', 'Choose an MP3 file');
+                return;
+            }
+            const songName = (songNameInput.value || '').trim();
+            const songArtist = (songArtistInput.value || '').trim();
+            const songId = makeSongId(songName, songArtist);
+            if (!songId) {
+                setSheetStatus('error', 'Enter song name & artist first');
+                return;
+            }
+            currentSongId = songId;
+            await saveVideoId(songId, songName, songArtist);
+            const path = `${songId}/${Date.now()}-${file.name}`;
+            setSheetStatus('loading', 'Uploading MP3…');
+            const { error } = await supabaseClient.storage.from('audio').upload(path, file, { upsert: true });
+            if (error) {
+                console.warn(error);
+                setSheetStatus('error', error.message || 'Upload failed (check bucket "audio")');
+                return;
+            }
+            const { data } = supabaseClient.storage.from('audio').getPublicUrl(path);
+            const publicUrl = data?.publicUrl;
+            if (!publicUrl) {
+                setSheetStatus('error', 'No public URL; check bucket policy');
+                return;
+            }
+            setAudioAndSave(publicUrl).then(() => {
+                songNameInput.value = songName;
+                songArtistInput.value = songArtist;
+                refreshVideoListSelection(songId);
+                setSheetStatus('ready', 'Audio uploaded & saved');
+            }).catch(err => {
+                console.warn(err);
+                setSheetStatus('error', 'Audio save failed');
+            });
+        }
+
+        async function pushSectionsToSheet() {
+            if (!currentSongId) {
+                setSheetStatus('error', 'Pick or upload a song first');
+                return;
+            }
+            const rows = Object.entries(savedSections).map(([buttonId, entry]) => ({
+                button_id: buttonId,
+                label: entry.label || buttonId,
+                start_seconds: entry.start,
+                end_seconds: Number.isFinite(entry.end) ? entry.end : calculateEndTime(entry.start),
+                note: entry.note || '',
+                video_id: currentSongId
+            }));
+            if (!rows.length) {
+                setSheetStatus('error', 'No sections to save');
+                setTimeout(() => setSheetStatus('ready', 'Supabase synced'), 1200);
+                return;
+            }
+            setSheetStatus('loading', 'Saving sections…');
+            const { error } = await supabaseClient
+                .from('sections')
+                .upsert(rows, { onConflict: 'button_id' });
+            if (error) {
+                console.warn(error);
+                setSheetStatus('error', error.message);
+            } else {
+                setSheetStatus('ready', 'Sections saved');
+            }
+        }
+
+        async function loadSupabaseData() {
+            setSheetStatus('loading', 'Loading data…');
+            try {
+                // Load song list
+                const { data: vidRows, error: vidErr } = await supabaseClient
+                    .from('videos')
+                    .select('video_id,note,title,created_at')
+                    .order('created_at', { ascending: false });
+                if (vidErr) throw vidErr;
+
+                populateVideoDropdown(vidRows || []);
+
+                if (vidRows && vidRows[0]?.video_id) {
+                    await loadVideoById(vidRows[0].video_id);
+                    videoSelect.value = vidRows[0].video_id;
+                } else {
+                    savedSections = {};
+                    pendingMarkers = [];
+                    flushMarkers();
+                    setControlsEnabled(false);
+                }
+                setSheetStatus('ready', 'Supabase synced');
+            } catch (err) {
+                console.warn(err);
+                setSheetStatus('error', 'Load failed');
+            }
+        }
+
+        function populateVideoDropdown(rows) {
+            videoSelect.innerHTML = '<option value="">Saved songs…</option>';
+            rows.forEach(row => {
+                const meta = parseNoteMeta(row.note);
+                const label = meta.artist ? `${row.title || row.video_id} — ${meta.artist}` : (row.title || row.video_id);
+                const opt = document.createElement('option');
+                opt.value = row.video_id;
+                opt.textContent = label;
+                videoSelect.appendChild(opt);
+            });
+        }
+
+        async function loadSectionsForVideo(videoId) {
+            savedSections = {};
+            pendingMarkers = [];
+            document.querySelectorAll('.form-btn.logged').forEach(btn => btn.classList.remove('logged'));
+
+            // Try sections for this video_id first
+            const { data: secRows, error } = await supabaseClient
+                .from('sections')
+                .select('button_id,label,start_seconds,end_seconds,video_id,note')
+                .eq('video_id', videoId)
+                .order('start_seconds', { ascending: true });
+
+            let rows = secRows || [];
+            if (!rows.length) {
+                // fallback to global sections without video_id
+                const { data: fallbackRows, error: fbErr } = await supabaseClient
+                    .from('sections')
+                    .select('button_id,label,start_seconds,end_seconds,video_id,note')
+                    .is('video_id', null)
+                    .order('start_seconds', { ascending: true });
+                if (fbErr) console.warn(fbErr);
+                rows = fallbackRows || [];
+            }
+
+            rows.forEach(entry => {
+                const { button_id, label, start_seconds, end_seconds, note } = entry;
+                savedSections[button_id] = {
+                    start: Number(start_seconds),
+                    end: end_seconds !== null ? Number(end_seconds) : null,
+                    label: label || button_id,
+                    note: note || ''
+                };
+                const btn = document.getElementById(button_id);
+                if (btn && label && button_id !== 'btn-cust') btn.textContent = label;
+                if (btn) btn.classList.add('logged');
+                queueMarker(Number(start_seconds));
+            });
+
+            flushMarkers();
+        }
+
+        async function refreshVideoListSelection(selectId) {
+            const { data, error } = await supabaseClient
+                .from('videos')
+                .select('video_id,note,title,created_at')
+                .order('created_at', { ascending: false });
+            if (error) {
+                console.warn(error);
+                return;
+            }
+            populateVideoDropdown(data || []);
+            if (selectId) videoSelect.value = selectId;
+        }
+
+        function queueMarker(time) {
+            if (!Number.isFinite(time)) return;
+            pendingMarkers.push(time);
+        }
+
+        function flushMarkers() {
+            if (videoDuration <= 0) return;
+            const area = document.getElementById('markersArea');
+            area.innerHTML = '';
+            const colors = ['#00ff9d', '#ff00cc', '#00f3ff', '#bd00ff'];
+            const unique = Array.from(new Set(pendingMarkers)).sort((a, b) => a - b);
+            unique.forEach(time => {
+                const marker = document.createElement('div');
+                marker.className = 'marker';
+                const percent = (time / videoDuration) * 100;
+                marker.style.left = percent + '%';
+                marker.style.borderBottomColor = colors[Math.floor(Math.random() * colors.length)];
+                area.appendChild(marker);
+            });
+        }
+
+        function initAudioPlayer() {
+            player = document.getElementById('audioPlayer');
+            if (!player) return;
+            player.addEventListener('loadedmetadata', onAudioLoaded);
+            player.addEventListener('timeupdate', onAudioTimeUpdate);
+            player.addEventListener('play', updatePlayIcon);
+            player.addEventListener('pause', updatePlayIcon);
+            setControlsEnabled(false);
+        }
+
+        function onAudioLoaded() {
+            videoDuration = player.duration || 0;
+            timeline.max = videoDuration || 100;
+            flushMarkers();
+            if (durationLabel) durationLabel.textContent = formatTime(videoDuration);
+            setControlsEnabled(!!player.src);
+        }
+
+        function onAudioTimeUpdate() {
+            const currentTime = player.currentTime || 0;
+            timeline.value = currentTime;
+            if (currentTimeLabel) currentTimeLabel.textContent = formatTime(currentTime);
+
+            if(activeSection && loopSetting > 0 && videoDuration) {
+                if (currentTime >= activeSection.end) {
+                    if (activeSection.remainingLoops > 0 || loopSetting === 4) {
+                        player.currentTime = activeSection.start;
+                        if(loopSetting !== 4) activeSection.remainingLoops--;
+                    } else {
+                        activeSection = null;
+                        player.pause();
+                        loopRangeBar.style.opacity = 0;
+                    }
+                }
+            }
+        }
+
+        function updatePlayIcon() {
+            const icon = document.getElementById('playIcon');
+            if (!icon) return;
+            icon.className = player && !player.paused ? "fas fa-pause-circle" : "fas fa-play-circle";
+        }
+
+        timeline.addEventListener('input', function() {
+            const time = Number(this.value);
+            if (player) player.currentTime = time;
+            activeSection = null;
+            loopRangeBar.style.opacity = 0;
+            if (currentTimeLabel) currentTimeLabel.textContent = formatTime(time);
+        });
+
+        // --- SECTION LOGIC ---
+
+        async function handleSectionClick(btnId, label) {
+            const btn = document.getElementById(btnId);
+            const entry = savedSections[btnId];
+
+            if (entry) {
+                // --- PLAY MODE ---
+                const startTime = entry.start;
+                let endTime = Number.isFinite(entry.end) ? entry.end : calculateEndTime(startTime);
+                if (!Number.isFinite(endTime) || endTime <= startTime) endTime = Math.min(startTime + 8, videoDuration || startTime + 8);
+                
+                let loops = 0;
+                if(loopSetting === 1) loops = 0; // Play once (0 repeats)
+                if(loopSetting === 2) loops = 1; // Play, then repeat 1 time (total 2)
+                if(loopSetting === 3) loops = 3; // Play, then repeat 3 times (total 4)
+                
+                activeSection = {
+                    start: startTime,
+                    end: endTime,
+                    remainingLoops: loops
+                };
+
+                updateLoopRangeVisual(startTime, endTime);
+                
+                if (player) {
+                    player.currentTime = startTime;
+                    player.play();
+                }
+
+            } else {
+                // --- LOGGING MODE ---
+                if (!player) return;
+                const currentTime = player.currentTime || 0;
+                savedSections[btnId] = { start: currentTime, end: null, label: label, note: '' };
+                if (btn) btn.classList.add('logged');
+                queueMarker(currentTime);
+                flushMarkers();
+                try {
+                    await saveSection(btnId, savedSections[btnId]);
+                    setSheetStatus('ready', 'Section saved');
+                } catch (err) {
+                    console.warn(err);
+                    setSheetStatus('error', 'Save failed');
+                }
+            }
+        }
+
+        // Logic: End Time = Start time of the NEAREST NEXT marker
+        function calculateEndTime(startTime) {
+            const times = Object.values(savedSections)
+                .map(entry => entry.start)
+                .filter(num => Number.isFinite(num))
+                .sort((a, b) => a - b);
+            
+            const index = times.indexOf(startTime);
+            if (index > -1 && index < times.length - 1) {
+                return times[index + 1];
+            } else {
+                return videoDuration || startTime;
+            }
+        }
+
+        function updateLoopRangeVisual(start, end) {
+            if (!videoDuration) return;
+            const startPct = (start / videoDuration) * 100;
+            const endPct = (end / videoDuration) * 100;
+            const width = Math.max(endPct - startPct, 0);
+            
+            loopRangeBar.style.left = startPct + '%';
+            loopRangeBar.style.width = width + '%';
+            loopRangeBar.style.opacity = 1;
+        }
+
+        // --- CONTROLS ---
+        function togglePlay() {
+            if(!player) return;
+            if (!player.src) {
+                setSheetStatus('error', 'No audio loaded');
+                return;
+            }
+            if (!player.paused) player.pause();
+            else player.play();
+        }
+
+        let taps = [];
+        const bpmDisplay = document.getElementById('bpmDisplay');
+        const tapBtn = document.getElementById('tapBtn');
+        async function handleTap() {
+            const now = Date.now();
+            if (taps.length > 0 && now - taps[taps.length - 1] > 2000) taps = [];
+            taps.push(now);
+            if (taps.length > 4) taps.shift();
+            if (taps.length > 1) {
+                let intervals = [];
+                for (let i = 1; i < taps.length; i++) intervals.push(taps[i] - taps[i-1]);
+                let avg = intervals.reduce((a, b) => a + b) / intervals.length;
+                let bpm = Math.round(60000 / avg);
+                bpmDisplay.innerText = bpm;
+                tapBtn.style.transform = "scale(0.9)";
+                setTimeout(() => tapBtn.style.transform = "scale(1)", 100);
+                try {
+                    await saveVideoMeta({ bpm });
+                } catch (err) {
+                    console.warn('Save BPM failed', err);
+                }
+            }
+        }
+
+        const loopBtn = document.getElementById('loopBtn');
+        const loopText = document.getElementById('loopText');
+        function toggleLoop() {
+            loopSetting++;
+            if (loopSetting > 4) loopSetting = 0;
+            loopBtn.classList.add('active');
+            if (loopSetting===0) {
+                loopText.innerHTML = '<i class="fas fa-ban"></i>';
+                loopBtn.classList.remove('active');
+            } else if (loopSetting===4) {
+                loopText.innerHTML = '<i class="fas fa-infinity"></i>';
+            } else {
+                // 1=1x, 2=2x, 3=4x
+                const counts = [0, 1, 2, 4];
+                loopText.innerText = counts[loopSetting] + 'x';
+            }
+        }
+
+        // --- BOOT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initAudioPlayer();
+            initAuthGate();
+        });
+
+        // --- AUTH UI ---
+        function openAuthModal() { authModal.style.display = 'flex'; }
+        function closeAuthModal() { authModal.style.display = 'none'; }
+        authFab.addEventListener('click', openAuthModal);
+        authModal.addEventListener('click', (e) => { if (e.target === authModal) closeAuthModal(); });
+        authOpenBtn.addEventListener('click', openAuthModal);
+        authSignOutBtn.addEventListener('click', handleSignOut);
+
+        function updateAuthUI(session) {
+            if (session?.user) {
+                authStateText.textContent = session.user.email || 'Signed in';
+                authSignOutBtn.style.display = 'inline-block';
+                authOpenBtn.textContent = 'Switch';
+                showAppShell();
+            } else {
+                authStateText.textContent = 'Signed out';
+                authSignOutBtn.style.display = 'none';
+                authOpenBtn.textContent = 'Sign in';
+                showAuthGate();
+            }
+        }
+
+        async function handleSignIn() {
+            setSheetStatus('loading', 'Signing in…');
+            const { error } = await supabaseClient.auth.signInWithPassword({
+                email: authEmail.value,
+                password: authPassword.value
+            });
+            if (error) {
+                setSheetStatus('error', error.message);
+            } else {
+                setSheetStatus('ready', 'Signed in');
+                closeAuthModal();
+                loadSupabaseData();
+            }
+        }
+        async function handleRegister() {
+            setSheetStatus('loading', 'Registering…');
+            const { error } = await supabaseClient.auth.signUp({
+                email: authEmail.value,
+                password: authPassword.value
+            });
+            if (error) setSheetStatus('error', error.message);
+            else setSheetStatus('ready', 'Check email to confirm');
+        }
+        async function handleReset() {
+            setSheetStatus('loading', 'Sending reset…');
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(authEmail.value, {
+                redirectTo: window.location.origin
+            });
+            if (error) setSheetStatus('error', error.message);
+            else setSheetStatus('ready', 'Reset email sent');
+        }
+        async function handleSignOut() {
+            await supabaseClient.auth.signOut();
+            updateAuthUI(null);
+            setSheetStatus('ready', 'Signed out');
+        }
+
+        // --- AUTH GATE LOGIC ---
+        authGateSubmit.addEventListener('click', handleAuthGateSubmit);
+        authGateToggle.addEventListener('click', () => {
+            setAuthGateMode(authGateMode === 'signin' ? 'signup' : 'signin');
+        });
+        authGateReset.addEventListener('click', async () => {
+            authGateStatus.textContent = 'Sending reset…';
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(gateEmail.value, {
+                redirectTo: window.location.origin
+            });
+            authGateStatus.textContent = error ? error.message : 'Reset email sent';
+        });
+
+        async function handleAuthGateSubmit() {
+            authGateStatus.textContent = authGateMode === 'signin' ? 'Signing in…' : 'Creating…';
+            if (authGateMode === 'signin') {
+                const { error } = await supabaseClient.auth.signInWithPassword({
+                    email: gateEmail.value,
+                    password: gatePassword.value
+                });
+                authGateStatus.textContent = error ? error.message : 'Signed in';
+            } else {
+                const { error } = await supabaseClient.auth.signUp({
+                    email: gateEmail.value,
+                    password: gatePassword.value
+                });
+                authGateStatus.textContent = error ? error.message : 'Check email to confirm';
+            }
+        }
+
+        async function initAuthGate() {
+            setAuthGateMode('signin');
+            const { data } = await supabaseClient.auth.getSession();
+            const session = data?.session || null;
+            updateAuthUI(session);
+            if (session) {
+                showAppShell();
+                loadSupabaseData();
+            } else {
+                showAuthGate();
+            }
+        }
+
+        supabaseClient.auth.onAuthStateChange((_event, session) => {
+            updateAuthUI(session || null);
+            if (session?.user) {
+                showAppShell();
+                loadSupabaseData();
+            } else {
+                showAuthGate();
+            }
+        });
+
+        // Video dropdown change handler
+        videoSelect.addEventListener('change', async (e) => {
+            const vid = e.target.value;
+            if (!vid) return;
+            await loadVideoById(vid);
+        });
+    </script>
+</body>
+</html>
+
