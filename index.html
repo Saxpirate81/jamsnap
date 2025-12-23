@@ -33,6 +33,7 @@
             height: 100vh;
             display: flex; flex-direction: column;
             overflow: hidden;
+            font-size: 17px;
         }
 
         /* Main app shell must flex to let grid fill remaining space */
@@ -41,7 +42,7 @@
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
-            padding-bottom: 120px; /* leave space for bottom tabs */
+            padding-bottom: 280px; /* leave space for bottom tabs + drawer */
             padding-top: 78px; /* leave space for fixed header, tighter gap */
         }
 
@@ -81,14 +82,13 @@
             z-index: 22;
         }
         .logo-badge {
-            width: 38px; height: 38px;
+            width: 42px; height: 42px;
             border-radius: 12px;
-            background: linear-gradient(135deg, #7a2cff, #ff00cc);
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 900;
-            color: #ffe066;
+            background: url('logo-192.png') center center / cover no-repeat, #111;
+            display: inline-block;
             box-shadow: 0 0 10px rgba(189,0,255,0.35);
             flex-shrink: 0;
+            text-indent: -9999px;
         }
         .header-email {
             flex: 1;
@@ -257,7 +257,7 @@
             align-items: center;
             font-size: 0.85rem;
             color: #cfe8ff;
-            margin-top: 6px;
+            margin-top: 12px;
         }
         .time-row .time-label {
             font-weight: 700;
@@ -275,19 +275,31 @@
         input[type=range]:focus { outline: none; }
 
         input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 12px; cursor: pointer;
+            width: 100%; height: 10px; cursor: pointer;
             background: #333; border-radius: 25px;
             border: 2px solid var(--neon-blue);
         }
 
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; height: 50px; width: 50px; margin-top: -20px;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M10,10 Q50,-10 90,10 Q100,50 50,110 Q0,50 10,10 Z' fill='%2300ff9d' stroke='%23ffffff' stroke-width='3'/%3E%3Cpath d='M50,25 C54,25 57,28 57,32 L57,55 C57,59 54,62 50,62 C46,62 43,59 43,55 L43,32 C43,28 46,25 50,25 Z M40,55 C40,60 44,65 50,65 C56,65 60,60 60,55 M50,65 L50,75 M45,75 L55,75' stroke='%23000' stroke-width='4' fill='none'/%3E%3C/svg%3E");
-            background-size: contain; background-repeat: no-repeat; background-position: center;
-            cursor: pointer; filter: drop-shadow(0 0 5px var(--neon-green));
-            transition: transform 0.1s;
+            -webkit-appearance: none; height: 32px; width: 32px; margin-top: -10px;
+            background: linear-gradient(135deg, #5cf0ff, #12ffa1);
+            border: 3px solid #0b2030;
+            border-radius: 12px;
+            box-shadow: 0 0 8px rgba(18,255,161,0.45), 0 0 4px rgba(0,0,0,0.35);
+            cursor: pointer;
+            transition: transform 0.12s, box-shadow 0.12s;
         }
-        input[type=range]::-webkit-slider-thumb:active { transform: scale(1.2); }
+        input[type=range]::-webkit-slider-thumb:active { transform: translateY(-1px) scale(1.05); box-shadow: 0 0 10px rgba(18,255,161,0.6); }
+        input[type=range]::-moz-range-thumb {
+            height: 32px; width: 32px;
+            background: linear-gradient(135deg, #5cf0ff, #12ffa1);
+            border: 3px solid #0b2030;
+            border-radius: 12px;
+            box-shadow: 0 0 8px rgba(18,255,161,0.45), 0 0 4px rgba(0,0,0,0.35);
+            cursor: pointer;
+            transition: transform 0.12s, box-shadow 0.12s;
+        }
+        input[type=range]::-moz-range-thumb:active { transform: translateY(-1px) scale(1.05); box-shadow: 0 0 10px rgba(18,255,161,0.6); }
 
         /* Markers & Loop Range */
         .markers-container { position: relative; height: 10px; margin-top: 5px; width: calc(100% - 20px); margin: 0 10px; }
@@ -301,7 +313,7 @@
         /* The Loop Highlight Bar */
         #activeLoopRange {
             position: absolute;
-            top: 14px; /* Raised to avoid overlapping time labels */
+            top: 20px; /* Raised further to avoid overlapping time labels */
             height: 8px;
             background: var(--neon-pink);
             opacity: 0;
@@ -484,16 +496,16 @@
             background: #0f162b;
             border-top: 1px solid #2f3a5a;
             border-left: 1px solid #1c2741;
-            border-right: 1px solid #1c2741;
+            border-right: 1c2741;
             border-radius: 18px 18px 0 0;
             box-shadow: 0 -8px 24px rgba(0,0,0,0.45);
-            height: 320px; /* fits buttons */
+            height: 240px; /* fits buttons */
             transition: height 0.25s ease, transform 0.25s ease;
             overflow: hidden;
             z-index: 40; /* above header so handle stays clickable */
         }
         .form-drawer.open {
-            height: calc(100vh - 120px);
+            height: calc(100vh - 160px);
         }
         .drawer-handle {
             width: 60px; height: 6px; border-radius: 3px;
@@ -519,7 +531,7 @@
         #editGrid .form-btn { flex: 1 1 auto; }
         #editGrid { flex: 0 0 auto; }
         #editGrid {
-            max-height: 320px;
+            max-height: 220px;
             overflow-y: auto;
         }
         #editListWrapper {
@@ -527,7 +539,6 @@
             overflow-y: auto;
             min-height: 180px;
         }
-        #editList .add-row { display: none; }
 
         /* AUTH FLOATING BUTTON & MODAL */
         .auth-fab {
@@ -543,6 +554,10 @@
             cursor: pointer;
             z-index: 80;
             transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .form-btn.clicked {
+            transform: scale(0.97);
+            box-shadow: 0 0 12px rgba(255,255,255,0.35);
         }
         .auth-fab:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(189, 0, 255, 0.55); }
         .auth-fab:active { transform: scale(0.96); }
@@ -623,19 +638,14 @@
         <div class="logo-badge">J</div>
         <span class="header-email" id="authStateText">Signed out</span>
     </div>
-    <div class="actions-stack" id="actionsStack" style="margin-top:4px;">
-        <div class="sheet-actions">
-            <input id="songNameInput" type="text" placeholder="Song name" style="flex:2; min-width:160px;" />
-            <input id="songArtistInput" type="text" placeholder="Artist" style="flex:1.5; min-width:140px;" />
-            <input id="audioFileInput" type="file" accept="audio/mpeg" style="flex:1 0 auto; min-width:160px; color:#fff;">
-            <button onclick="uploadAudioFile()" style="flex:0 0 auto;">Upload & Set</button>
-            <button class="secondary" onclick="pushSectionsToSheet()">Save sections</button>
-        </div>
+    <div class="actions-stack" id="actionsStack" style="display:none;">
+        <!-- legacy inline add form hidden now that Add Song modal exists -->
     </div>
-    <div class="sheet-actions" id="songBar" style="align-items:center; gap:6px; margin-top:6px;">
+        <div class="sheet-actions" id="songBar" style="align-items:center; gap:6px; margin-top:6px; font-size: 0.9rem; font-weight: 800;">
         <select id="videoSelect" class="fancy-select" style="min-width:180px; flex:1;">
             <option value="">Saved songs…</option>
         </select>
+        <button class="secondary" id="addSongBtn" type="button">Add Song</button>
         <button class="secondary" id="editViewBtn" type="button" style="display:none;">Edit</button>
     </div>
     <div class="tempo-row" id="tempoRow">
@@ -741,6 +751,21 @@
             </div>
         </div>
     </div>
+    <div class="modal-backdrop" id="addSongModal">
+        <div class="modal-card">
+            <h3>Add Song</h3>
+            <label for="newSongNameInput">Song name</label>
+            <input type="text" id="newSongNameInput" placeholder="Song name">
+            <label for="newSongArtistInput">Artist</label>
+            <input type="text" id="newSongArtistInput" placeholder="Artist">
+            <label for="newSongFileInput">Choose MP3</label>
+            <input type="file" id="newSongFileInput" accept="audio/mpeg">
+            <div class="modal-actions">
+                <button class="modal-secondary" type="button" onclick="closeAddSongModal()">Cancel</button>
+                <button class="modal-primary" type="button" onclick="saveNewSong()">Save</button>
+            </div>
+        </div>
+    </div>
     </div> <!-- end appShell -->
 
     <script>
@@ -812,6 +837,11 @@
         const sectionEndLabel = document.getElementById('sectionEndLabel');
         const sectionColorInput = document.getElementById('sectionColorInput');
         const sectionLabelInput = document.getElementById('sectionLabelInput');
+        const addSongBtn = document.getElementById('addSongBtn');
+        const addSongModal = document.getElementById('addSongModal');
+        const newSongNameInput = document.getElementById('newSongNameInput');
+        const newSongArtistInput = document.getElementById('newSongArtistInput');
+        const newSongFileInput = document.getElementById('newSongFileInput');
         const actionsStack = document.getElementById('actionsStack');
         const loopBtn = document.getElementById('loopBtn');
         const loopText = document.getElementById('loopText');
@@ -820,10 +850,18 @@
         let drawerOpen = false;
         let currentMode = 'practice';
         let creatingNewSection = false;
+        let drawerTouchStartY = null;
+        let drawerTouchOpen = false;
         function updateSectionUIVisibility() {
             const hasSections = Object.keys(savedSections).length > 0;
-            const showGrid = !!currentSongId && hasSections;
-            if (practiceGrid) practiceGrid.classList.toggle('hidden', !showGrid);
+            if (practiceGrid) {
+                if (currentMode === 'practice') {
+                    const showGrid = !!currentSongId && hasSections;
+                    practiceGrid.classList.toggle('hidden', !showGrid);
+                } else {
+                    practiceGrid.classList.add('hidden');
+                }
+            }
             if (editListWrapper) {
                 const showList = (currentMode === 'edit') && drawerOpen && hasSections;
                 editListWrapper.classList.toggle('hidden', !showList);
@@ -849,6 +887,16 @@
             'btn-solo': '#c084fc',
             'btn-outro': '#a5b4fc',
             'btn-custom': '#34d399'
+        };
+        const TYPE_TO_BASE = {
+            'Intro': 'btn-intro',
+            'Verse': 'btn-verse',
+            'Pre-Ch': 'btn-pre',
+            'Chorus': 'btn-chorus',
+            'Bridge': 'btn-bridge',
+            'Solo': 'btn-solo',
+            'Outro': 'btn-outro',
+            'Custom': 'btn-custom'
         };
         let editingSectionId = null;
 
@@ -879,6 +927,12 @@
         function baseType(label) {
             if (!label) return 'Custom';
             return label.replace(/\s+\d+$/, '').trim();
+        }
+
+        function colorForMeta(id, meta) {
+            const type = baseType(meta?.label || id);
+            const baseKey = TYPE_TO_BASE[type] || id;
+            return COLOR_MAP[baseKey] || meta?.color || defaultColors(id);
         }
 
         function parseTimeInput(val) {
@@ -968,26 +1022,26 @@
             Object.entries(savedSections).forEach(([id, entry]) => {
                 const noteMeta = parseNoteMeta(entry.note);
                 const label = noteMeta.label || entry.label || id;
-                const color = noteMeta.color || COLOR_MAP[id] || defaultColors(id);
+                const color = colorForMeta(id, { label, color: noteMeta.color });
                 formsMeta[id] = { label, color };
             });
         }
 
         function renderGrids() {
-            // Practice: only saved forms for the selected song
+            // Practice: show saved forms for the selected song (content persists; visibility handled elsewhere)
             if (practiceGrid) {
                 practiceGrid.innerHTML = '';
                 Object.entries(formsMeta).forEach(([id, meta]) => {
                     const btn = document.createElement('button');
                     btn.className = 'form-btn';
-                    btn.style.background = meta.color;
+                    btn.style.background = colorForMeta(id, meta);
                     btn.id = id;
                     btn.textContent = meta.label;
                     btn.onclick = () => handleSectionClick(id, meta.label);
                     practiceGrid.appendChild(btn);
                 });
             }
-            // Edit: fixed base set (one per type) with distinct colors
+            // Edit: fixed base set (one per type) with distinct colors (content persists; visibility handled elsewhere)
             if (editGrid) {
                 editGrid.innerHTML = '';
                 BASE_FORMS.forEach(base => {
@@ -1091,6 +1145,7 @@
 
             if (!savedSections[editingSectionId]) {
                 // create new
+                if (!formsMeta[editingSectionId]) formsMeta[editingSectionId] = { label: labelVal, color: colorVal };
                 savedSections[editingSectionId] = {
                     start: startVal,
                     end: null,
@@ -1131,6 +1186,26 @@
             sectionModal.style.display = 'none';
         }
 
+        function closeAddSongModal() {
+            addSongModal.style.display = 'none';
+        }
+
+        async function saveNewSong() {
+            const name = newSongNameInput.value.trim();
+            const artist = newSongArtistInput.value.trim();
+            const fileInput = newSongFileInput;
+            if (!fileInput || !fileInput.files || !fileInput.files.length) {
+                setSheetStatus('error', 'Pick an MP3');
+                return;
+            }
+            // sync fields used by existing upload flow
+            songNameInput.value = name;
+            songArtistInput.value = artist;
+            // temporarily swap file input reference
+            await uploadAudioFile(fileInput);
+            closeAddSongModal();
+        }
+
         function renderEditList() {
             editList.innerHTML = '';
             const numbered = computeNumberedSections();
@@ -1148,7 +1223,7 @@
 
                 const sw = document.createElement('div');
                 sw.className = 'swatch';
-                sw.style.background = item.color;
+                sw.style.background = colorForMeta(item.id, { label: item.displayLabel, color: item.color });
 
                 const title = document.createElement('div');
                 title.textContent = item.displayLabel;
@@ -1165,15 +1240,6 @@
                 editList.appendChild(row);
             });
 
-            const addRow = document.createElement('div');
-            addRow.className = 'edit-item';
-            const addBtn = document.createElement('button');
-            addBtn.className = 'btn-edit';
-            addBtn.textContent = '+ Add Form';
-            addBtn.style.width = '100%';
-            addBtn.onclick = () => openFormModal();
-            addRow.appendChild(addBtn);
-            editList.appendChild(addRow);
         }
 
         async function saveVideoMeta(updates) {
@@ -1291,8 +1357,9 @@
             }
         }
 
-        async function uploadAudioFile() {
-            const file = audioFileInput.files?.[0];
+        async function uploadAudioFile(fileInputOverride=null) {
+            const fileInput = fileInputOverride || audioFileInput;
+            const file = fileInput.files?.[0];
             if (!file) {
                 setSheetStatus('error', 'Choose an MP3 file');
                 return;
@@ -1439,6 +1506,7 @@
             syncFormsMetaFromSections();
             renderGrids();
             renderEditList();
+            updateSectionUIVisibility();
             if (currentMode === 'edit') {
                 setDrawer(true);
             }
@@ -1544,7 +1612,7 @@
                 if (btnId === 'btn-custom') {
                     if (player && !player.paused) player.pause();
                     creatingNewSection = true;
-                    editingSectionId = btnId;
+                    editingSectionId = `${btnId}-${Date.now()}`;
                     sectionModal.style.display = 'flex';
                     sectionModalTitle.textContent = 'Add Custom';
                     sectionTypeSelect.innerHTML = '';
@@ -1560,17 +1628,25 @@
                     if (sectionColorInput) sectionColorInput.value = meta.color;
                     return;
                 } else {
-                    savedSections[btnId] = {
+                    const baseId = btnId.split('-').slice(0,2).join('-');
+                    const newId = `${baseId}-${Date.now()}`;
+                    const color = meta.color || COLOR_MAP[baseId] || defaultColors(newId);
+                    formsMeta[newId] = { label: meta.label, color };
+                    savedSections[newId] = {
                         start: currentTime,
                         end: null,
                         label: meta.label,
-                        note: JSON.stringify({ label: meta.label, color: meta.color })
+                        note: JSON.stringify({ label: meta.label, color })
                     };
-                    if (btn) btn.classList.add('logged');
+                    if (btn) {
+                        btn.classList.add('clicked');
+                        setTimeout(() => btn.classList.remove('clicked'), 180);
+                    }
+                    const saveId = newId;
                     queueMarker(currentTime);
                     flushMarkers();
                     try {
-                        await saveSection(btnId, savedSections[btnId]);
+                        await saveSection(saveId, savedSections[saveId]);
                         syncFormsMetaFromSections();
                         renderGrids();
                         renderEditList();
@@ -1615,7 +1691,11 @@
                     label: meta.label,
                     note: JSON.stringify({ label: meta.label, color: meta.color })
                 };
-                if (btn) btn.classList.add('logged');
+                if (btn) {
+                    btn.classList.add('logged');
+                    btn.classList.add('clicked');
+                    setTimeout(() => btn.classList.remove('clicked'), 180);
+                }
                 queueMarker(currentTime);
                 flushMarkers();
                 try {
@@ -1754,7 +1834,34 @@
         if (drawerHandle) drawerHandle.addEventListener('click', () => {
             const next = !drawerOpen;
             setDrawer(next);
+            if (editListWrapper) editListWrapper.classList.toggle('hidden', !next && Object.keys(savedSections).length === 0);
         });
+        if (addSongBtn) addSongBtn.addEventListener('click', () => {
+            newSongNameInput.value = '';
+            newSongArtistInput.value = '';
+            if (newSongFileInput) newSongFileInput.value = '';
+            addSongModal.style.display = 'flex';
+        });
+        function onDrawerTouchStart(e) {
+            if (!e.touches || !e.touches.length) return;
+            drawerTouchStartY = e.touches[0].clientY;
+            drawerTouchOpen = drawerOpen;
+        }
+        function onDrawerTouchEnd(e) {
+            if (drawerTouchStartY === null || !e.changedTouches || !e.changedTouches.length) return;
+            const dy = e.changedTouches[0].clientY - drawerTouchStartY;
+            if (dy < -25) setDrawer(true);
+            else if (dy > 25) setDrawer(false);
+            drawerTouchStartY = null;
+        }
+        if (drawerHandle) {
+            drawerHandle.addEventListener('touchstart', onDrawerTouchStart);
+            drawerHandle.addEventListener('touchend', onDrawerTouchEnd);
+        }
+        if (formDrawer) {
+            formDrawer.addEventListener('touchstart', onDrawerTouchStart);
+            formDrawer.addEventListener('touchend', onDrawerTouchEnd);
+        }
         if (editViewBtn) editViewBtn.addEventListener('click', () => setMode('edit'));
 
         // --- MODAL ---
@@ -1956,6 +2063,7 @@
                 const showGrid = !!currentSongId && Object.keys(savedSections).length > 0;
                 if (practiceGrid) practiceGrid.classList.toggle('hidden', !showGrid);
             }
+            updateSectionUIVisibility();
         });
     </script>
 </body>
