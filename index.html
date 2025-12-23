@@ -6,8 +6,8 @@
     <title>JamSnap - Auto Loop</title>
     <meta name="theme-color" content="#1a1a2e">
     <link rel="manifest" href="manifest.webmanifest">
-    <link rel="icon" href="/favicon.png" type="image/png">
-    <link rel="apple-touch-icon" href="/logo-192.png">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="logo-192.png">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -20,6 +20,8 @@
             --neon-blue: #00f3ff;
             --neon-purple: #bd00ff;
         }
+
+        .hidden { display: none !important; }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
@@ -39,6 +41,8 @@
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
+            padding-bottom: 120px; /* leave space for bottom tabs */
+            padding-top: 78px; /* leave space for fixed header, tighter gap */
         }
 
         /* SHEET STATUS */
@@ -63,31 +67,45 @@
 
         .hidden { display: none !important; }
 
-        /* AUTH STATUS */
-        .auth-status {
+        /* APP HEADER */
+        .app-header {
             position: fixed;
-            top: 10px; left: 10px;
-            background: rgba(0,0,0,0.5);
-            border: 1px solid #333;
-            padding: 6px 10px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            z-index: 20;
-            display: flex; align-items: center; gap: 8px;
+            top: 10px; left: 10px; right: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid #2f3a5a;
+            padding: 8px 12px;
+            border-radius: 12px;
+            z-index: 22;
         }
-        .auth-status button {
+        .logo-badge {
+            width: 38px; height: 38px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #7a2cff, #ff00cc);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900;
+            color: #ffe066;
+            box-shadow: 0 0 10px rgba(189,0,255,0.35);
+            flex-shrink: 0;
+        }
+        .header-email {
+            flex: 1;
+            font-weight: 700;
+            color: #e7ecff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .header-auth-btn {
             background: var(--neon-blue);
             color: #000;
             border: none;
-            border-radius: 8px;
-            padding: 6px 8px;
-            font-weight: 700;
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-weight: 800;
             cursor: pointer;
-        }
-        .auth-status .secondary {
-            background: #333;
-            color: #fff;
-            border: 1px solid #555;
         }
         /* Hide top bar auth buttons; account handled in modal */
         .auth-status button { display: none; }
@@ -200,11 +218,38 @@
             border: 1px solid #555;
         }
 
+        .tempo-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 10px 0 10px;
+        }
+        .tempo-pill {
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid #2f3a5a;
+            font-weight: 800;
+            color: #e7ecff;
+        }
+        .tempo-btn {
+            background: var(--neon-blue);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(0,243,255,0.35);
+        }
+
         /* TIMELINE */
         .timeline-container {
             padding: 20px 15px 5px 15px;
             background: linear-gradient(180deg, #101018 0%, var(--bg-color) 100%);
             position: relative;
+            width: 100%;
+            margin: 0 auto;
         }
         .time-row {
             display: flex;
@@ -225,7 +270,7 @@
         #audioPlayer { display: none; }
 
         input[type=range] {
-            -webkit-appearance: none; appearance: none; width: 100%; background: transparent; position: relative; z-index: 5;
+            -webkit-appearance: none; appearance: none; width: calc(100% - 20px); background: transparent; position: relative; z-index: 5; display: block; margin: 0 10px;
         }
         input[type=range]:focus { outline: none; }
 
@@ -245,7 +290,7 @@
         input[type=range]::-webkit-slider-thumb:active { transform: scale(1.2); }
 
         /* Markers & Loop Range */
-        .markers-container { position: relative; height: 10px; margin-top: 5px; width: 100%; }
+        .markers-container { position: relative; height: 10px; margin-top: 5px; width: calc(100% - 20px); margin: 0 10px; }
         .marker {
             position: absolute; width: 0; height: 0;
             border-left: 6px solid transparent; border-right: 6px solid transparent;
@@ -256,7 +301,7 @@
         /* The Loop Highlight Bar */
         #activeLoopRange {
             position: absolute;
-            top: 22px; /* Aligns with track */
+            top: 14px; /* Raised to avoid overlapping time labels */
             height: 8px;
             background: var(--neon-pink);
             opacity: 0;
@@ -293,6 +338,32 @@
         .loop-count { font-family: 'Fredoka One', cursive; font-size: 1.2rem; }
         .loop-label { font-size: 0.5rem; text-transform: uppercase; }
 
+        /* MODE TABS */
+        .mode-tabs {
+            position: fixed;
+            bottom: 15px;
+            left: 0; right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            z-index: 25;
+        }
+        .mode-tab {
+            padding: 10px 14px;
+            border-radius: 20px;
+            border: 1px solid #2f3a5a;
+            background: #0f162b;
+            color: #e7ecff;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,243,255,0.2);
+        }
+        .mode-tab.active {
+            border-color: var(--neon-blue);
+            background: linear-gradient(135deg, #1a223b, #111a33);
+            color: #fff;
+        }
+
         /* GRID */
         .grid-container {
             flex-grow: 1; padding: 10px 15px;
@@ -320,12 +391,143 @@
         .btn-outro { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
         .btn-custom { background: linear-gradient(135deg, #43e97b, #38f9d7); color: #1a1a2e; }
 
-        /* LYRICS */
-        .lyrics-drawer {
-            background: #252525; border-top-left-radius: 20px; border-top-right-radius: 20px;
-            height: 40px; text-align: center; color: #aaa; box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+        .edit-list {
+            padding: 10px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: calc(100vh - 260px);
+            overflow-y: auto;
         }
-        .drag-handle { width: 40px; height: 5px; background: #555; border-radius: 5px; margin: 10px auto; }
+        .edit-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid #2f3a5a;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.35);
+            flex-wrap: wrap;
+        }
+        .swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 0 8px rgba(0,0,0,0.3);
+        }
+        .edit-actions {
+            margin-left: auto;
+            display: flex; gap: 8px; flex-wrap: wrap;
+        }
+        .edit-actions button {
+            border: none;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-edit { background: var(--neon-blue); color: #000; }
+        .btn-delete { background: #ff5e62; color: #fff; }
+
+        /* ADD/EDIT MODAL */
+        .modal-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center; justify-content: center;
+            z-index: 50;
+        }
+        .modal-card {
+            background: #111526;
+            border: 1px solid #2a2f4d;
+            border-radius: 16px;
+            padding: 18px;
+            width: 340px;
+            max-width: calc(100% - 32px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+        }
+        .modal-card h3 {
+            margin: 0 0 10px 0;
+            font-family: 'Fredoka One', cursive;
+            letter-spacing: 0.3px;
+        }
+        .modal-card label {
+            font-size: 0.9rem; color: #cfd5ff;
+        }
+        .modal-card input[type="text"],
+        .modal-card input[type="color"] {
+            width: 100%;
+            margin: 6px 0 12px 0;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #2f3a5a;
+            background: #0a0f1f;
+            color: #fff;
+        }
+        .modal-actions {
+            display: flex; gap: 10px; margin-top: 10px;
+        }
+        .modal-actions button {
+            flex: 1; padding: 10px 0;
+            border-radius: 10px; border: none;
+            font-weight: 800; cursor: pointer;
+        }
+        .modal-primary { background: var(--neon-green); color: #0a0a1a; }
+        .modal-secondary { background: #1d243b; color: #d8e0ff; border: 1px solid #2f3a5a; }
+
+        /* FORM DRAWER */
+        .form-drawer {
+            position: fixed;
+            left: 0; right: 0;
+            bottom: 70px;
+            background: #0f162b;
+            border-top: 1px solid #2f3a5a;
+            border-left: 1px solid #1c2741;
+            border-right: 1px solid #1c2741;
+            border-radius: 18px 18px 0 0;
+            box-shadow: 0 -8px 24px rgba(0,0,0,0.45);
+            height: 320px; /* fits buttons */
+            transition: height 0.25s ease, transform 0.25s ease;
+            overflow: hidden;
+            z-index: 40; /* above header so handle stays clickable */
+        }
+        .form-drawer.open {
+            height: calc(100vh - 120px);
+        }
+        .drawer-handle {
+            width: 60px; height: 6px; border-radius: 3px;
+            background: #2f3a5a;
+            margin: 8px auto 8px auto;
+            cursor: pointer;
+            position: relative;
+            z-index: 45;
+        }
+        .drawer-content {
+            height: calc(100% - 22px);
+            overflow-y: auto;
+            padding: 8px 10px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #editListWrapper {
+            flex: 1;
+            overflow-y: auto;
+        }
+        /* keep buttons same size when drawer opens */
+        #editGrid .form-btn { flex: 1 1 auto; }
+        #editGrid { flex: 0 0 auto; }
+        #editGrid {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        #editListWrapper {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 180px;
+        }
+        #editList .add-row { display: none; }
 
         /* AUTH FLOATING BUTTON & MODAL */
         .auth-fab {
@@ -339,7 +541,7 @@
             box-shadow: 0 0 18px rgba(0, 243, 255, 0.5);
             border: 2px solid #111;
             cursor: pointer;
-            z-index: 30;
+            z-index: 80;
             transition: transform 0.12s ease, box-shadow 0.12s ease;
         }
         .auth-fab:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(189, 0, 255, 0.55); }
@@ -417,17 +619,11 @@
     </div>
 
     <div id="appShell">
-    <div class="sheet-status" id="sheetStatus">
-        <span class="sheet-dot"></span>
-        <span id="sheetStatusText">Waiting for sheet…</span>
+    <div class="app-header">
+        <div class="logo-badge">J</div>
+        <span class="header-email" id="authStateText">Signed out</span>
     </div>
-    <div class="auth-status" id="authStatus">
-        <span id="authStateText">Signed out</span>
-        <button id="authOpenBtn" type="button">Sign in</button>
-        <button id="authSignOutBtn" class="secondary" type="button" style="display:none;">Sign out</button>
-    </div>
-
-    <div class="actions-stack">
+    <div class="actions-stack" id="actionsStack" style="margin-top:4px;">
         <div class="sheet-actions">
             <input id="songNameInput" type="text" placeholder="Song name" style="flex:2; min-width:160px;" />
             <input id="songArtistInput" type="text" placeholder="Artist" style="flex:1.5; min-width:140px;" />
@@ -435,11 +631,17 @@
             <button onclick="uploadAudioFile()" style="flex:0 0 auto;">Upload & Set</button>
             <button class="secondary" onclick="pushSectionsToSheet()">Save sections</button>
         </div>
-        <div class="sheet-actions">
-            <select id="videoSelect" class="fancy-select">
-                <option value="">Saved songs…</option>
-            </select>
-        </div>
+    </div>
+    <div class="sheet-actions" id="songBar" style="align-items:center; gap:6px; margin-top:6px;">
+        <select id="videoSelect" class="fancy-select" style="min-width:180px; flex:1;">
+            <option value="">Saved songs…</option>
+        </select>
+        <button class="secondary" id="editViewBtn" type="button" style="display:none;">Edit</button>
+    </div>
+    <div class="tempo-row" id="tempoRow">
+        <span id="practiceBpm" class="tempo-pill">Tempo: --</span>
+        <button class="tempo-btn hidden" id="tapBtn" type="button" onclick="handleTap()">Tap tempo</button>
+        <span id="editBpm" class="tempo-pill hidden">Logged: --</span>
     </div>
 
     <div class="timeline-container">
@@ -454,10 +656,6 @@
     </div>
 
     <div class="controls-mid">
-        <div class="tempo-btn" id="tapBtn" onclick="handleTap()">
-            <span class="bpm-display" id="bpmDisplay">--</span>
-            <span class="bpm-label">Tap Me</span>
-        </div>
         <button class="play-btn" onclick="togglePlay()">
             <i class="fas fa-play-circle" id="playIcon"></i>
         </button>
@@ -467,27 +665,21 @@
         </div>
     </div>
 
-    <div class="grid-container">
-        <button class="form-btn btn-intro" id="btn-intro" onclick="handleSectionClick('btn-intro', 'Intro')">Intro</button>
-        <button class="form-btn btn-verse" id="btn-v1" onclick="handleSectionClick('btn-v1', 'Verse 1')">Verse 1</button>
-        <button class="form-btn btn-verse" id="btn-v2" onclick="handleSectionClick('btn-v2', 'Verse 2')">Verse 2</button>
-        <button class="form-btn btn-chorus" id="btn-c1" onclick="handleSectionClick('btn-c1', 'Chorus 1')">Chorus 1</button>
-        <button class="form-btn btn-chorus" id="btn-c2" onclick="handleSectionClick('btn-c2', 'Chorus 2')">Chorus 2</button>
-        <button class="form-btn btn-chorus" id="btn-c3" onclick="handleSectionClick('btn-c3', 'Chorus 3')">Chorus 3</button>
-        <button class="form-btn btn-bridge" id="btn-br" onclick="handleSectionClick('btn-br', 'Bridge')">Bridge</button>
-        <button class="form-btn btn-verse" id="btn-solo" onclick="handleSectionClick('btn-solo', 'Solo')">Solo</button>
-        <button class="form-btn btn-outro" id="btn-out" onclick="handleSectionClick('btn-out', 'Outro')">Outro</button>
-        <button class="form-btn btn-intro" id="btn-pre1" onclick="handleSectionClick('btn-pre1', 'Pre-Ch 1')">Pre-Ch 1</button>
-        <button class="form-btn btn-intro" id="btn-pre2" onclick="handleSectionClick('btn-pre2', 'Pre-Ch 2')">Pre-Ch 2</button>
-        <button class="form-btn btn-intro" id="btn-pre3" onclick="handleSectionClick('btn-pre3', 'Pre-Ch 3')">Pre-Ch 3</button>
-        <button class="form-btn btn-custom" id="btn-cust" onclick="handleSectionClick('btn-cust', 'Custom')">
-            <i class="fas fa-plus"></i>&nbsp;Add
-        </button>
+    <div class="grid-container" id="practiceGrid"></div>
+
+    <div class="mode-tabs">
+        <button class="mode-tab active" id="tabPractice">Practice</button>
+        <button class="mode-tab" id="tabEdit">Edit</button>
     </div>
 
-    <div class="lyrics-drawer">
-        <div class="drag-handle"></div>
-        <small>Lyrics & Notes</small>
+    <div class="form-drawer" id="formDrawer">
+        <div class="drawer-handle" id="drawerHandle"></div>
+        <div class="drawer-content">
+            <div class="grid-container" id="editGrid"></div>
+            <div class="edit-list hidden" id="editListWrapper">
+                <div id="editList" class="edit-list"></div>
+            </div>
+        </div>
     </div>
 
     <div class="auth-fab" id="authFab" title="Account">
@@ -510,6 +702,42 @@
             </div>
             <div class="auth-row" style="margin-top:10px;">
                 <button class="secondary" type="button" onclick="handleSignOut()">Sign out</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop" id="formModal">
+        <div class="modal-card">
+            <h3 id="formModalTitle">Add Form</h3>
+            <label for="formNameInput">Name</label>
+            <input type="text" id="formNameInput" placeholder="Section name">
+            <label for="formColorInput">Color</label>
+            <input type="color" id="formColorInput" value="#ff6b6b">
+            <div class="modal-actions">
+                <button class="modal-secondary" type="button" onclick="closeFormModal()">Cancel</button>
+                <button class="modal-primary" type="button" onclick="saveFormModal()">Save</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop" id="sectionModal">
+        <div class="modal-card">
+            <h3 id="sectionModalTitle">Edit Section</h3>
+            <label for="sectionTypeSelect">Type</label>
+            <select id="sectionTypeSelect" class="fancy-select"></select>
+            <label for="sectionLabelInput">Label (optional)</label>
+            <input type="text" id="sectionLabelInput" placeholder="e.g., Breakdown">
+            <label for="sectionStartInput">Start time (mm:ss or seconds)</label>
+            <input type="text" id="sectionStartInput" placeholder="0:00">
+            <label for="sectionColorInput">Color</label>
+            <input type="color" id="sectionColorInput" value="#4facfe">
+            <div class="modal-row" style="margin: 6px 0; color: #d8e0ff; font-weight: 700;">
+                <span id="sectionEndLabel">End: --:--</span>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-secondary" type="button" onclick="closeSectionModal()">Cancel</button>
+                <button class="modal-primary" type="button" onclick="saveSectionModal()">Save</button>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-delete" type="button" onclick="deleteSectionModal()">Delete</button>
             </div>
         </div>
     </div>
@@ -544,8 +772,8 @@
         const authGateTitle = document.getElementById('authGateTitle');
         const authGateStatus = document.getElementById('authGateStatus');
         const authGateReset = document.getElementById('authGateReset');
-        const sheetStatus = document.getElementById('sheetStatus');
-        const sheetStatusText = document.getElementById('sheetStatusText');
+        const sheetStatus = null;
+        const sheetStatusText = { textContent: '' };
         const songNameInput = document.getElementById('songNameInput');
         const songArtistInput = document.getElementById('songArtistInput');
         const videoSelect = document.getElementById('videoSelect');
@@ -557,13 +785,75 @@
         const authStateText = document.getElementById('authStateText');
         const authOpenBtn = document.getElementById('authOpenBtn');
         const authSignOutBtn = document.getElementById('authSignOutBtn');
+        const bpmDisplay = document.getElementById('bpmDisplay');
         const currentTimeLabel = document.getElementById('currentTimeLabel');
         const durationLabel = document.getElementById('durationLabel');
         const timeline = document.getElementById('videoTimeline');
         const loopRangeBar = document.getElementById('activeLoopRange');
         const playButton = document.querySelector('.play-btn');
+        const practiceGrid = document.getElementById('practiceGrid');
+        const editGrid = document.getElementById('editGrid');
+        const editList = document.getElementById('editList');
+        const tabPractice = document.getElementById('tabPractice');
+        const tabEdit = document.getElementById('tabEdit');
+        const formModal = document.getElementById('formModal');
+        const formNameInput = document.getElementById('formNameInput');
+        const formColorInput = document.getElementById('formColorInput');
+        const editViewBtn = document.getElementById('editViewBtn');
+        const practiceBpm = document.getElementById('practiceBpm');
+        const editBpm = document.getElementById('editBpm');
+        const tapBtn = document.getElementById('tapBtn');
+        const formDrawer = document.getElementById('formDrawer');
+        const drawerHandle = document.getElementById('drawerHandle');
+        const editListWrapper = document.getElementById('editListWrapper');
+        const sectionModal = document.getElementById('sectionModal');
+        const sectionTypeSelect = document.getElementById('sectionTypeSelect');
+        const sectionStartInput = document.getElementById('sectionStartInput');
+        const sectionEndLabel = document.getElementById('sectionEndLabel');
+        const sectionColorInput = document.getElementById('sectionColorInput');
+        const sectionLabelInput = document.getElementById('sectionLabelInput');
+        const actionsStack = document.getElementById('actionsStack');
+        const loopBtn = document.getElementById('loopBtn');
+        const loopText = document.getElementById('loopText');
+        let editingFormId = null;
+        let formsMeta = {}; // {buttonId: {label, color}}
+        let drawerOpen = false;
+        let currentMode = 'practice';
+        let creatingNewSection = false;
+        function updateSectionUIVisibility() {
+            const hasSections = Object.keys(savedSections).length > 0;
+            const showGrid = !!currentSongId && hasSections;
+            if (practiceGrid) practiceGrid.classList.toggle('hidden', !showGrid);
+            if (editListWrapper) {
+                const showList = (currentMode === 'edit') && drawerOpen && hasSections;
+                editListWrapper.classList.toggle('hidden', !showList);
+            }
+        }
+        const TYPE_OPTIONS = ['Intro','Verse','Pre-Ch','Chorus','Bridge','Solo','Outro','Custom'];
+        const BASE_FORMS = [
+            { id: 'btn-intro', label: 'Intro' },
+            { id: 'btn-verse', label: 'Verse' },
+            { id: 'btn-pre', label: 'Pre-Ch' },
+            { id: 'btn-chorus', label: 'Chorus' },
+            { id: 'btn-bridge', label: 'Bridge' },
+            { id: 'btn-solo', label: 'Solo' },
+            { id: 'btn-outro', label: 'Outro' },
+            { id: 'btn-custom', label: 'Custom' },
+        ];
+        const COLOR_MAP = {
+            'btn-intro': '#f9a8d4',
+            'btn-verse': '#7dd3fc',
+            'btn-pre': '#fbbf24',
+            'btn-chorus': '#fb7185',
+            'btn-bridge': '#93c5fd',
+            'btn-solo': '#c084fc',
+            'btn-outro': '#a5b4fc',
+            'btn-custom': '#34d399'
+        };
+        let editingSectionId = null;
 
         function setSheetStatus(state, text) {
+            if (!sheetStatus || !sheetStatusText) return;
             sheetStatus.classList.remove('error', 'ready');
             if (state === 'ready') sheetStatus.classList.add('ready');
             if (state === 'error') sheetStatus.classList.add('error');
@@ -580,6 +870,38 @@
             if (tc) tc.classList.toggle(disabledClass, !enabled);
             if (playButton) playButton.classList.toggle(disabledClass, !enabled);
             if (typeof loopBtn !== 'undefined' && loopBtn) loopBtn.classList.toggle(disabledClass, !enabled);
+        }
+
+        function slugify(text) {
+            return (text || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'custom';
+        }
+
+        function baseType(label) {
+            if (!label) return 'Custom';
+            return label.replace(/\s+\d+$/, '').trim();
+        }
+
+        function parseTimeInput(val) {
+            if (!val) return null;
+            if (val.includes(':')) {
+                const parts = val.split(':').map(Number);
+                if (parts.some(isNaN)) return null;
+                if (parts.length === 2) return parts[0] * 60 + parts[1];
+                if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+            }
+            const num = Number(val);
+            return Number.isFinite(num) ? num : null;
+        }
+
+        function defaultColors(id) {
+            const palette = ['#FF9966', '#4facfe', '#f093fb', '#89f7fe', '#a18cd1', '#43e97b', '#fbc2eb', '#66a6ff', '#38f9d7'];
+            return palette[Math.abs(hashCode(id)) % palette.length];
+        }
+
+        function hashCode(str) {
+            let h = 0;
+            for (let i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i) | 0;
+            return h;
         }
 
         function normalizeSongId(raw) {
@@ -641,6 +963,219 @@
             }
         }
 
+        function syncFormsMetaFromSections() {
+            formsMeta = {};
+            Object.entries(savedSections).forEach(([id, entry]) => {
+                const noteMeta = parseNoteMeta(entry.note);
+                const label = noteMeta.label || entry.label || id;
+                const color = noteMeta.color || COLOR_MAP[id] || defaultColors(id);
+                formsMeta[id] = { label, color };
+            });
+        }
+
+        function renderGrids() {
+            // Practice: only saved forms for the selected song
+            if (practiceGrid) {
+                practiceGrid.innerHTML = '';
+                Object.entries(formsMeta).forEach(([id, meta]) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'form-btn';
+                    btn.style.background = meta.color;
+                    btn.id = id;
+                    btn.textContent = meta.label;
+                    btn.onclick = () => handleSectionClick(id, meta.label);
+                    practiceGrid.appendChild(btn);
+                });
+            }
+            // Edit: fixed base set (one per type) with distinct colors
+            if (editGrid) {
+                editGrid.innerHTML = '';
+                BASE_FORMS.forEach(base => {
+                    const btn = document.createElement('button');
+                    btn.className = 'form-btn';
+                    btn.style.background = COLOR_MAP[base.id] || defaultColors(base.id);
+                    btn.id = base.id;
+                    btn.textContent = base.label;
+                    btn.onclick = () => handleSectionClick(base.id, base.label);
+                    editGrid.appendChild(btn);
+                });
+            }
+        }
+
+        function computeNumberedSections() {
+            const arr = Object.entries(savedSections).map(([id, entry]) => {
+                const meta = formsMeta[id] || { label: entry.label || id, color: defaultColors(id) };
+                const type = baseType(meta.label || entry.label || id);
+                return {
+                    id,
+                    type,
+                    start: Number(entry.start) || 0,
+                    end: Number.isFinite(entry.end) ? entry.end : calculateEndTime(entry.start),
+                    color: meta.color
+                };
+            });
+            arr.sort((a, b) => a.start - b.start);
+            const counters = {};
+            arr.forEach(item => {
+                counters[item.type] = (counters[item.type] || 0) + 1;
+                item.displayLabel = `${item.type} ${counters[item.type]}`;
+            });
+            return arr;
+        }
+
+        async function updateSectionType(id, newType, newColor=null, newLabel=null) {
+            if (!formsMeta[id]) return;
+            if (newColor) formsMeta[id].color = newColor;
+            formsMeta[id].label = newLabel || newType;
+            if (savedSections[id]) {
+                savedSections[id].label = newLabel || newType;
+                const noteMeta = parseNoteMeta(savedSections[id].note);
+                const colorToSave = newColor || noteMeta.color || formsMeta[id].color || defaultColors(id);
+                savedSections[id].note = JSON.stringify({ ...noteMeta, label: (newLabel || newType), color: colorToSave });
+                savedSections[id].color = colorToSave;
+                formsMeta[id].color = colorToSave;
+                await saveSection(id, savedSections[id]);
+            }
+            renderGrids();
+            renderEditList();
+        }
+
+        async function updateSectionStart(id, val, newColor=null) {
+            const secs = parseTimeInput(val);
+            if (secs === null || !savedSections[id]) return;
+            savedSections[id].start = secs;
+            if (newColor) {
+                const noteMeta = parseNoteMeta(savedSections[id].note);
+                const colorToSave = newColor || noteMeta.color || defaultColors(id);
+                savedSections[id].note = JSON.stringify({ ...noteMeta, color: colorToSave, label: savedSections[id].label });
+                savedSections[id].color = colorToSave;
+                if (formsMeta[id]) formsMeta[id].color = colorToSave;
+            }
+            await saveSection(id, savedSections[id]);
+            renderEditList();
+        }
+
+        function openSectionModal(id) {
+            const entry = savedSections[id];
+            if (!entry) return;
+            editingSectionId = id;
+            const numbered = computeNumberedSections();
+            const match = numbered.find(n => n.id === id);
+            const type = match ? match.type : baseType(entry.label);
+            const endVal = match ? match.end : calculateEndTime(entry.start);
+            const colorVal = (formsMeta[id]?.color) || defaultColors(id);
+
+            sectionModal.style.display = 'flex';
+            sectionModalTitle.textContent = match ? match.displayLabel : 'Edit Section';
+
+            sectionTypeSelect.innerHTML = '';
+            TYPE_OPTIONS.forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt;
+                o.textContent = opt;
+                if (opt === type) o.selected = true;
+                sectionTypeSelect.appendChild(o);
+            });
+            sectionStartInput.value = formatTime(entry.start || 0);
+            sectionEndLabel.textContent = 'End: ' + formatTime(endVal);
+            if (sectionColorInput) sectionColorInput.value = colorVal;
+        }
+
+        async function saveSectionModal() {
+            if (!editingSectionId) return;
+            const typeVal = sectionTypeSelect.value;
+            const labelVal = (sectionLabelInput?.value?.trim()) || typeVal;
+            const startVal = parseTimeInput(sectionStartInput.value);
+            const colorVal = sectionColorInput ? sectionColorInput.value : defaultColors(editingSectionId);
+            if (startVal === null) return;
+
+            if (!savedSections[editingSectionId]) {
+                // create new
+                savedSections[editingSectionId] = {
+                    start: startVal,
+                    end: null,
+                    label: labelVal,
+                    note: JSON.stringify({ label: labelVal, color: colorVal })
+                };
+                formsMeta[editingSectionId] = { label: labelVal, color: colorVal };
+                try {
+                    await saveSection(editingSectionId, savedSections[editingSectionId]);
+                } catch (err) {
+                    console.warn('Save section failed', err);
+                    setSheetStatus('error', 'Save failed');
+                }
+            } else {
+                await updateSectionType(editingSectionId, typeVal, colorVal, labelVal);
+                await updateSectionStart(editingSectionId, startVal, colorVal);
+                savedSections[editingSectionId].label = labelVal;
+                const noteMeta = parseNoteMeta(savedSections[editingSectionId].note);
+                savedSections[editingSectionId].note = JSON.stringify({ ...noteMeta, label: labelVal, color: colorVal });
+                formsMeta[editingSectionId].label = labelVal;
+            }
+            syncFormsMetaFromSections();
+            renderGrids();
+            renderEditList();
+            updateSectionUIVisibility();
+            closeSectionModal();
+            creatingNewSection = false;
+        }
+
+        async function deleteSectionModal() {
+            if (!editingSectionId) return;
+            await deleteForm(editingSectionId, true);
+            closeSectionModal();
+        }
+
+        function closeSectionModal() {
+            editingSectionId = null;
+            sectionModal.style.display = 'none';
+        }
+
+        function renderEditList() {
+            editList.innerHTML = '';
+            const numbered = computeNumberedSections();
+            if (!numbered.length) {
+                const empty = document.createElement('div');
+                empty.className = 'edit-item';
+                empty.style.justifyContent = 'center';
+                empty.textContent = 'No sections yet';
+                editList.appendChild(empty);
+            }
+            numbered.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'edit-item';
+                row.onclick = () => openSectionModal(item.id);
+
+                const sw = document.createElement('div');
+                sw.className = 'swatch';
+                sw.style.background = item.color;
+
+                const title = document.createElement('div');
+                title.textContent = item.displayLabel;
+                title.style.fontWeight = '800';
+
+                const meta = document.createElement('div');
+                meta.style.fontWeight = '700';
+                meta.style.color = '#d8e0ff';
+                meta.textContent = `${baseType(item.displayLabel)} • ${formatTime(item.start)} → ${formatTime(item.end)}`;
+
+                row.appendChild(sw);
+                row.appendChild(title);
+                row.appendChild(meta);
+                editList.appendChild(row);
+            });
+
+            const addRow = document.createElement('div');
+            addRow.className = 'edit-item';
+            const addBtn = document.createElement('button');
+            addBtn.className = 'btn-edit';
+            addBtn.textContent = '+ Add Form';
+            addBtn.style.width = '100%';
+            addBtn.onclick = () => openFormModal();
+            addRow.appendChild(addBtn);
+            editList.appendChild(addRow);
+        }
+
         async function saveVideoMeta(updates) {
             if (!currentSongId) return;
             const merged = { ...(currentVideoMeta || {}), ...updates };
@@ -674,9 +1209,9 @@
         }
 
         function applyBpmFromMeta() {
-            if (currentVideoMeta && currentVideoMeta.bpm) {
-                bpmDisplay.innerText = Math.round(currentVideoMeta.bpm);
-            }
+            const val = currentVideoMeta && currentVideoMeta.bpm ? Math.round(currentVideoMeta.bpm) : null;
+            if (practiceBpm) practiceBpm.textContent = 'Tempo: ' + (val ?? '--');
+            if (editBpm) editBpm.textContent = 'Logged: ' + (val ?? '--');
         }
 
         async function loadVideoById(videoId) {
@@ -708,12 +1243,16 @@
                 setSheetStatus('error', 'Pick or upload a song first');
                 return;
             }
+            const meta = formsMeta[buttonId] || { label: entry.label || buttonId, color: defaultColors(buttonId) };
+            const noteObj = parseNoteMeta(entry.note);
+            noteObj.label = meta.label;
+            noteObj.color = meta.color;
             const payload = {
                 button_id: buttonId,
-                label: entry.label || buttonId,
+                label: meta.label || entry.label || buttonId,
                 start_seconds: entry.start,
                 end_seconds: entry.end ?? calculateEndTime(entry.start),
-                note: entry.note || '',
+                note: JSON.stringify(noteObj),
                 video_id: currentSongId
             };
             const { error } = await supabaseClient
@@ -799,7 +1338,7 @@
             }
             const rows = Object.entries(savedSections).map(([buttonId, entry]) => ({
                 button_id: buttonId,
-                label: entry.label || buttonId,
+                label: (formsMeta[buttonId]?.label) || entry.label || buttonId,
                 start_seconds: entry.start,
                 end_seconds: Number.isFinite(entry.end) ? entry.end : calculateEndTime(entry.start),
                 note: entry.note || '',
@@ -833,16 +1372,13 @@
                 if (vidErr) throw vidErr;
 
                 populateVideoDropdown(vidRows || []);
-
-                if (vidRows && vidRows[0]?.video_id) {
-                    await loadVideoById(vidRows[0].video_id);
-                    videoSelect.value = vidRows[0].video_id;
-                } else {
-                    savedSections = {};
-                    pendingMarkers = [];
-                    flushMarkers();
-                    setControlsEnabled(false);
-                }
+                savedSections = {};
+                pendingMarkers = [];
+                flushMarkers();
+                setControlsEnabled(false);
+                syncFormsMetaFromSections();
+                renderGrids();
+                renderEditList();
                 setSheetStatus('ready', 'Supabase synced');
             } catch (err) {
                 console.warn(err);
@@ -860,6 +1396,8 @@
                 opt.textContent = label;
                 videoSelect.appendChild(opt);
             });
+            editViewBtn.style.display = 'none';
+            videoSelect.value = '';
         }
 
         async function loadSectionsForVideo(videoId) {
@@ -894,13 +1432,16 @@
                     label: label || button_id,
                     note: note || ''
                 };
-                const btn = document.getElementById(button_id);
-                if (btn && label && button_id !== 'btn-cust') btn.textContent = label;
-                if (btn) btn.classList.add('logged');
                 queueMarker(Number(start_seconds));
             });
 
             flushMarkers();
+            syncFormsMetaFromSections();
+            renderGrids();
+            renderEditList();
+            if (currentMode === 'edit') {
+                setDrawer(true);
+            }
         }
 
         async function refreshVideoListSelection(selectId) {
@@ -993,17 +1534,66 @@
         async function handleSectionClick(btnId, label) {
             const btn = document.getElementById(btnId);
             const entry = savedSections[btnId];
+            const currentTime = player && Number.isFinite(player.currentTime)
+                ? player.currentTime
+                : (timeline && Number.isFinite(Number(timeline.value)) ? Number(timeline.value) : 0);
+            const meta = formsMeta[btnId] || { label, color: COLOR_MAP[btnId] || defaultColors(btnId) };
 
+            // In EDIT mode: always log at current position (no playback jump)
+            if (currentMode === 'edit') {
+                if (btnId === 'btn-custom') {
+                    if (player && !player.paused) player.pause();
+                    creatingNewSection = true;
+                    editingSectionId = btnId;
+                    sectionModal.style.display = 'flex';
+                    sectionModalTitle.textContent = 'Add Custom';
+                    sectionTypeSelect.innerHTML = '';
+                    TYPE_OPTIONS.forEach(opt => {
+                        const o = document.createElement('option');
+                        o.value = opt;
+                        o.textContent = opt;
+                        if (opt === 'Custom') o.selected = true;
+                        sectionTypeSelect.appendChild(o);
+                    });
+                    sectionStartInput.value = formatTime(currentTime);
+                    sectionEndLabel.textContent = 'End: --';
+                    if (sectionColorInput) sectionColorInput.value = meta.color;
+                    return;
+                } else {
+                    savedSections[btnId] = {
+                        start: currentTime,
+                        end: null,
+                        label: meta.label,
+                        note: JSON.stringify({ label: meta.label, color: meta.color })
+                    };
+                    if (btn) btn.classList.add('logged');
+                    queueMarker(currentTime);
+                    flushMarkers();
+                    try {
+                        await saveSection(btnId, savedSections[btnId]);
+                        syncFormsMetaFromSections();
+                        renderGrids();
+                        renderEditList();
+                        updateSectionUIVisibility();
+                        setSheetStatus('ready', 'Section saved');
+                    } catch (err) {
+                        console.warn(err);
+                        setSheetStatus('error', 'Save failed');
+                    }
+                    return;
+                }
+            }
+
+            // PRACTICE mode behaviour (play existing, log new)
             if (entry) {
-                // --- PLAY MODE ---
                 const startTime = entry.start;
                 let endTime = Number.isFinite(entry.end) ? entry.end : calculateEndTime(startTime);
                 if (!Number.isFinite(endTime) || endTime <= startTime) endTime = Math.min(startTime + 8, videoDuration || startTime + 8);
                 
                 let loops = 0;
-                if(loopSetting === 1) loops = 0; // Play once (0 repeats)
-                if(loopSetting === 2) loops = 1; // Play, then repeat 1 time (total 2)
-                if(loopSetting === 3) loops = 3; // Play, then repeat 3 times (total 4)
+                if(loopSetting === 1) loops = 0;
+                if(loopSetting === 2) loops = 1;
+                if(loopSetting === 3) loops = 3;
                 
                 activeSection = {
                     start: startTime,
@@ -1013,21 +1603,27 @@
 
                 updateLoopRangeVisual(startTime, endTime);
                 
-                if (player) {
+                if (player && player.src) {
                     player.currentTime = startTime;
                     player.play();
                 }
 
             } else {
-                // --- LOGGING MODE ---
-                if (!player) return;
-                const currentTime = player.currentTime || 0;
-                savedSections[btnId] = { start: currentTime, end: null, label: label, note: '' };
+                savedSections[btnId] = {
+                    start: currentTime,
+                    end: null,
+                    label: meta.label,
+                    note: JSON.stringify({ label: meta.label, color: meta.color })
+                };
                 if (btn) btn.classList.add('logged');
                 queueMarker(currentTime);
                 flushMarkers();
                 try {
                     await saveSection(btnId, savedSections[btnId]);
+                    syncFormsMetaFromSections();
+                    renderGrids();
+                    renderEditList();
+                    updateSectionUIVisibility();
                     setSheetStatus('ready', 'Section saved');
                 } catch (err) {
                     console.warn(err);
@@ -1074,21 +1670,19 @@
         }
 
         let taps = [];
-        const bpmDisplay = document.getElementById('bpmDisplay');
-        const tapBtn = document.getElementById('tapBtn');
         async function handleTap() {
             const now = Date.now();
             if (taps.length > 0 && now - taps[taps.length - 1] > 2000) taps = [];
             taps.push(now);
             if (taps.length > 4) taps.shift();
             if (taps.length > 1) {
-                let intervals = [];
+                const intervals = [];
                 for (let i = 1; i < taps.length; i++) intervals.push(taps[i] - taps[i-1]);
-                let avg = intervals.reduce((a, b) => a + b) / intervals.length;
-                let bpm = Math.round(60000 / avg);
-                bpmDisplay.innerText = bpm;
-                tapBtn.style.transform = "scale(0.9)";
-                setTimeout(() => tapBtn.style.transform = "scale(1)", 100);
+                const avg = intervals.reduce((a, b) => a + b) / intervals.length;
+                const bpm = Math.round(60000 / avg);
+                currentVideoMeta = currentVideoMeta || {};
+                currentVideoMeta.bpm = bpm;
+                applyBpmFromMeta();
                 try {
                     await saveVideoMeta({ bpm });
                 } catch (err) {
@@ -1097,8 +1691,6 @@
             }
         }
 
-        const loopBtn = document.getElementById('loopBtn');
-        const loopText = document.getElementById('loopText');
         function toggleLoop() {
             loopSetting++;
             if (loopSetting > 4) loopSetting = 0;
@@ -1115,10 +1707,123 @@
             }
         }
 
+        // --- MODE TOGGLE ---
+        function setDrawer(open) {
+            drawerOpen = open;
+            if (!formDrawer) return;
+            formDrawer.classList.toggle('open', !!open);
+            if (editListWrapper) editListWrapper.classList.toggle('hidden', !open);
+            if (editListWrapper) {
+                if (open) editListWrapper.classList.remove('hidden');
+                else editListWrapper.classList.add('hidden');
+            }
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            if (mode === 'practice') {
+                tabPractice.classList.add('active');
+                tabEdit.classList.remove('active');
+                const showGrid = !!currentSongId && Object.keys(savedSections).length > 0;
+                if (practiceGrid) practiceGrid.classList.toggle('hidden', !showGrid);
+                if (editGrid) editGrid.classList.add('hidden');
+                if (editListWrapper) editListWrapper.classList.add('hidden');
+                actionsStack.classList.add('hidden');
+                if (practiceBpm) practiceBpm.classList.remove('hidden');
+                if (tapBtn) tapBtn.classList.add('hidden');
+                if (editBpm) editBpm.classList.add('hidden');
+                if (formDrawer) formDrawer.style.display = 'none';
+                setDrawer(false);
+            } else {
+                tabPractice.classList.remove('active');
+                tabEdit.classList.add('active');
+                if (practiceGrid) practiceGrid.classList.add('hidden');
+                if (editGrid) editGrid.classList.remove('hidden');
+                if (editListWrapper) editListWrapper.classList.add('hidden'); // keep list hidden until user opens drawer
+                actionsStack.classList.remove('hidden');
+                if (practiceBpm) practiceBpm.classList.add('hidden');
+                if (tapBtn) tapBtn.classList.remove('hidden');
+                if (editBpm) editBpm.classList.remove('hidden');
+                if (formDrawer) formDrawer.style.display = 'block';
+                setDrawer(false); // start collapsed in Edit
+            }
+        }
+
+        tabPractice.addEventListener('click', () => setMode('practice'));
+        tabEdit.addEventListener('click', () => setMode('edit'));
+        if (drawerHandle) drawerHandle.addEventListener('click', () => {
+            const next = !drawerOpen;
+            setDrawer(next);
+        });
+        if (editViewBtn) editViewBtn.addEventListener('click', () => setMode('edit'));
+
+        // --- MODAL ---
+        function openFormModal(formId = null) {
+            editingFormId = formId;
+            if (formId && formsMeta[formId]) {
+                formModalTitle.textContent = 'Edit Form';
+                formNameInput.value = formsMeta[formId].label;
+                formColorInput.value = formsMeta[formId].color;
+            } else {
+                formModalTitle.textContent = 'Add Form';
+                formNameInput.value = '';
+                formColorInput.value = '#ff6b6b';
+            }
+            formModal.style.display = 'flex';
+        }
+
+        function closeFormModal() {
+            formModal.style.display = 'none';
+            editingFormId = null;
+        }
+
+        async function deleteForm(id, skipConfirm = false) {
+            if (!skipConfirm) {
+                const ok = window.confirm('Delete this section?');
+                if (!ok) return;
+            }
+            delete formsMeta[id];
+            delete savedSections[id];
+            if (currentSongId) {
+                try {
+                    await supabaseClient.from('sections').delete().eq('video_id', currentSongId).eq('button_id', id);
+                } catch (err) {
+                    console.warn('Delete failed', err);
+                }
+            }
+            renderGrids();
+            renderEditList();
+        }
+
+        async function saveFormModal() {
+            const name = formNameInput.value.trim();
+            if (!name) { setSheetStatus('error', 'Name required'); return; }
+            const color = formColorInput.value || '#ff6b6b';
+            const newId = editingFormId || ('btn-' + slugify(name));
+            formsMeta[newId] = { label: name, color };
+            if (!savedSections[newId]) {
+                savedSections[newId] = { start: 0, end: null, label: name, note: JSON.stringify({ label: name, color }) };
+                await saveSection(newId, savedSections[newId]);
+            } else {
+                // update label/color
+                savedSections[newId].label = name;
+                savedSections[newId].note = JSON.stringify({ ...(parseNoteMeta(savedSections[newId].note)), label: name, color });
+                await saveSection(newId, savedSections[newId]);
+            }
+            renderGrids();
+            renderEditList();
+            closeFormModal();
+        }
+
         // --- BOOT ---
         document.addEventListener('DOMContentLoaded', () => {
             initAudioPlayer();
             initAuthGate();
+            setMode('practice');
+            applyBpmFromMeta();
+            if (practiceGrid) practiceGrid.classList.add('hidden');
+            setControlsEnabled(false);
+            if (editListWrapper) editListWrapper.classList.remove('hidden');
         });
 
         // --- AUTH UI ---
@@ -1126,19 +1831,17 @@
         function closeAuthModal() { authModal.style.display = 'none'; }
         authFab.addEventListener('click', openAuthModal);
         authModal.addEventListener('click', (e) => { if (e.target === authModal) closeAuthModal(); });
-        authOpenBtn.addEventListener('click', openAuthModal);
-        authSignOutBtn.addEventListener('click', handleSignOut);
+        if (authOpenBtn) authOpenBtn.addEventListener('click', openAuthModal);
+        if (authSignOutBtn) authSignOutBtn.addEventListener('click', handleSignOut);
 
         function updateAuthUI(session) {
             if (session?.user) {
                 authStateText.textContent = session.user.email || 'Signed in';
-                authSignOutBtn.style.display = 'inline-block';
-                authOpenBtn.textContent = 'Switch';
+                if (authSignOutBtn) authSignOutBtn.style.display = 'inline-block';
                 showAppShell();
             } else {
                 authStateText.textContent = 'Signed out';
-                authSignOutBtn.style.display = 'none';
-                authOpenBtn.textContent = 'Sign in';
+                if (authSignOutBtn) authSignOutBtn.style.display = 'none';
                 showAuthGate();
             }
         }
@@ -1236,8 +1939,23 @@
         // Video dropdown change handler
         videoSelect.addEventListener('change', async (e) => {
             const vid = e.target.value;
-            if (!vid) return;
+            if (!vid) {
+                editViewBtn.style.display = 'none';
+                currentSongId = null;
+                setControlsEnabled(false);
+                if (practiceGrid) practiceGrid.classList.add('hidden');
+                return;
+            }
+            editViewBtn.style.display = 'inline-block';
             await loadVideoById(vid);
+            if (currentMode === 'edit') {
+                setDrawer(true);
+                if (editListWrapper) editListWrapper.classList.remove('hidden');
+            }
+            if (currentMode === 'practice') {
+                const showGrid = !!currentSongId && Object.keys(savedSections).length > 0;
+                if (practiceGrid) practiceGrid.classList.toggle('hidden', !showGrid);
+            }
         });
     </script>
 </body>
