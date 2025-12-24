@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/umd/vexflow-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vexflow/4.2.3/vexflow-min.js"></script>
 
     <style>
         :root {
@@ -918,6 +918,12 @@
         let drawerTouchStartY = null;
         let drawerTouchOpen = false;
         let staffNotesCache = {}; // {sectionId: [{keys,duration}]}
+        let vexflowPromise = null;
+        const VEX_URLS = [
+            'https://cdnjs.cloudflare.com/ajax/libs/vexflow/4.2.3/vexflow-min.js',
+            'https://unpkg.com/vexflow@4.2.3/build/vexflow-min.js',
+            'https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/umd/vexflow-min.js'
+        ];
         function updateSectionUIVisibility() {
             const hasSections = Object.keys(savedSections).length > 0;
             if (practiceGrid) {
@@ -1081,6 +1087,41 @@
             } catch (e) {
                 return {};
             }
+        }
+
+        function ensureVexFlow() {
+            if (window.Vex && Vex.Flow) return Promise.resolve();
+            if (vexflowPromise) return vexflowPromise;
+            const tryLoad = (urls, idx) => new Promise((resolve, reject) => {
+                if (idx >= urls.length) {
+                    reject();
+                    return;
+                }
+                const src = urls[idx];
+                console.info('Loading VexFlow from', src);
+                const script = document.createElement('script');
+                script.src = src;
+                script.crossOrigin = 'anonymous';
+                script.onload = () => {
+                    if (window.Vex && Vex.Flow) {
+                        console.info('VexFlow loaded');
+                        resolve();
+                    } else {
+                        console.warn('VexFlow loaded but Vex not available, trying next');
+                        tryLoad(urls, idx + 1).then(resolve).catch(reject);
+                    }
+                };
+                script.onerror = () => {
+                    console.warn('Failed to load VexFlow from', src);
+                    tryLoad(urls, idx + 1).then(resolve).catch(reject);
+                };
+                document.head.appendChild(script);
+            });
+            vexflowPromise = tryLoad(VEX_URLS, 0).catch(() => {
+                vexflowPromise = null;
+                return Promise.reject();
+            });
+            return vexflowPromise;
         }
 
         function getStaffNotes(sectionId) {
@@ -1348,21 +1389,25 @@
             voice.draw(context, stave);
         }
 
-        function renderLeadSheet() {
+        async function renderLeadSheet() {
             if (!leadContainer) return;
-            if (typeof Vex === 'undefined' || !Vex.Flow) {
+            if (!(window.Vex && Vex.Flow)) {
                 leadContainer.innerHTML = '';
                 const warn = document.createElement('div');
                 warn.className = 'lead-card';
-                warn.textContent = 'Staff renderer unavailable (VexFlow not loaded).';
+                warn.textContent = 'Loading staff renderer…';
                 leadContainer.appendChild(warn);
-                // try to load again on next render
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/umd/vexflow-min.js';
-                document.head.appendChild(script);
-                return;
+                try {
+                    await ensureVexFlow();
+                } catch (e) {
+                    warn.textContent = 'Staff renderer unavailable (VexFlow not loaded).';
+                    return;
+                }
+                if (!(window.Vex && Vex.Flow)) {
+                    warn.textContent = 'Staff renderer unavailable (VexFlow not loaded).';
+                    return;
+                }
             }
-            if (!leadContainer) return;
             leadContainer.innerHTML = '';
             const numbered = computeNumberedSections();
             if (!numbered.length) {
@@ -2049,7 +2094,7 @@
             const next = !drawerOpen;
             setDrawer(next);
             if (editListWrapper) editListWrapper.classList.toggle('hidden', !next && Object.keys(savedSections).length === 0);
-        });
+        }, { passive: true });
         if (addSongBtn) addSongBtn.addEventListener('click', () => {
             newSongNameInput.value = '';
             newSongArtistInput.value = '';
@@ -2069,12 +2114,12 @@
             drawerTouchStartY = null;
         }
         if (drawerHandle) {
-            drawerHandle.addEventListener('touchstart', onDrawerTouchStart);
-            drawerHandle.addEventListener('touchend', onDrawerTouchEnd);
+            drawerHandle.addEventListener('touchstart', onDrawerTouchStart, { passive: true });
+            drawerHandle.addEventListener('touchend', onDrawerTouchEnd, { passive: true });
         }
         if (formDrawer) {
-            formDrawer.addEventListener('touchstart', onDrawerTouchStart);
-            formDrawer.addEventListener('touchend', onDrawerTouchEnd);
+            formDrawer.addEventListener('touchstart', onDrawerTouchStart, { passive: true });
+            formDrawer.addEventListener('touchend', onDrawerTouchEnd, { passive: true });
         }
         if (editViewBtn) editViewBtn.addEventListener('click', () => setMode('edit'));
 
