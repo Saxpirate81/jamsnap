@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vexflow/4.2.3/vexflow-min.js"></script>
+    <script src="vexflow-min.js"></script>
 
     <style>
         :root {
@@ -920,6 +920,7 @@
         let staffNotesCache = {}; // {sectionId: [{keys,duration}]}
         let vexflowPromise = null;
         const VEX_URLS = [
+            'vexflow-min.js',
             'https://cdnjs.cloudflare.com/ajax/libs/vexflow/4.2.3/vexflow-min.js',
             'https://unpkg.com/vexflow@4.2.3/build/vexflow-min.js',
             'https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/umd/vexflow-min.js'
