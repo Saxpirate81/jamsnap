@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-    <script src="https://unpkg.com/vexflow@4.2.3/build/vexflow-min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/vexflow-min.js"></script>
 
     <style>
         :root {
@@ -1328,6 +1328,7 @@
         }
 
         function renderStaff(sectionId) {
+            if (typeof Vex === 'undefined' || !Vex.Flow) return;
             const target = document.getElementById(`staff-${sectionId}`);
             if (!target) return;
             target.innerHTML = '';
@@ -1348,6 +1349,19 @@
         }
 
         function renderLeadSheet() {
+            if (!leadContainer) return;
+            if (typeof Vex === 'undefined' || !Vex.Flow) {
+                leadContainer.innerHTML = '';
+                const warn = document.createElement('div');
+                warn.className = 'lead-card';
+                warn.textContent = 'Staff renderer unavailable (VexFlow not loaded).';
+                leadContainer.appendChild(warn);
+                // try to load again on next render
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/vexflow-min.js';
+                document.head.appendChild(script);
+                return;
+            }
             if (!leadContainer) return;
             leadContainer.innerHTML = '';
             const numbered = computeNumberedSections();
@@ -1476,8 +1490,8 @@
                 setSheetStatus('error', 'This song has no audio yet. Upload & Set an MP3.');
             }
             await loadSectionsForVideo(normalized);
-            songNameInput.value = currentVideoMeta.title || normalized;
-            songArtistInput.value = currentVideoMeta.artist || '';
+            if (songNameInput) songNameInput.value = currentVideoMeta.title || normalized;
+            if (songArtistInput) songArtistInput.value = currentVideoMeta.artist || '';
             setSheetStatus('ready', 'Song loaded');
         }
 
