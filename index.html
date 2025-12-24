@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="https://unpkg.com/vexflow@4.2.3/build/vexflow-min.js"></script>
 
     <style>
         :root {
@@ -567,6 +568,58 @@
             transform: scale(0.97);
             box-shadow: 0 0 12px rgba(255,255,255,0.35);
         }
+
+        /* Lead sheet */
+        .lead-container {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            padding: 12px 15px 80px 15px;
+            overflow-y: auto;
+        }
+        .lead-container.active { display: flex; }
+        .lead-card {
+            border: 1px solid #2f3a5a;
+            border-radius: 14px;
+            padding: 12px;
+            background: rgba(0,0,0,0.25);
+        }
+        .lead-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #e7ecff;
+        }
+        .lead-staff {
+            background: #0b1326;
+            border: 1px solid #1f2f4f;
+            border-radius: 10px;
+            padding: 8px;
+        }
+        .lead-controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 8px 0;
+            align-items: center;
+        }
+        .lead-controls select,
+        .lead-controls button {
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: 1px solid #2f3a5a;
+            background: #0f162b;
+            color: #e7ecff;
+            font-weight: 700;
+        }
+        .lead-controls button {
+            background: var(--neon-blue);
+            color: #000;
+            border: none;
+            cursor: pointer;
+        }
         .auth-fab:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(189, 0, 255, 0.55); }
         .auth-fab:active { transform: scale(0.96); }
 
@@ -688,6 +741,7 @@
     <div class="mode-tabs">
         <button class="mode-tab active" id="tabPractice">Practice</button>
         <button class="mode-tab" id="tabEdit">Edit</button>
+        <button class="mode-tab" id="tabLead">Lead</button>
     </div>
 
     <div class="form-drawer" id="formDrawer">
@@ -699,6 +753,7 @@
             </div>
         </div>
     </div>
+    <div class="lead-container" id="leadContainer"></div>
 
     <div class="auth-fab" id="authFab" title="Account">
         <i class="fas fa-user-astronaut"></i>
@@ -829,6 +884,7 @@
         const editList = document.getElementById('editList');
         const tabPractice = document.getElementById('tabPractice');
         const tabEdit = document.getElementById('tabEdit');
+        const tabLead = document.getElementById('tabLead');
         const formModal = document.getElementById('formModal');
         const formNameInput = document.getElementById('formNameInput');
         const formColorInput = document.getElementById('formColorInput');
@@ -850,6 +906,7 @@
         const newSongNameInput = document.getElementById('newSongNameInput');
         const newSongArtistInput = document.getElementById('newSongArtistInput');
         const newSongFileInput = document.getElementById('newSongFileInput');
+        const leadContainer = document.getElementById('leadContainer');
         const actionsStack = document.getElementById('actionsStack');
         const loopBtn = document.getElementById('loopBtn');
         const loopText = document.getElementById('loopText');
@@ -860,6 +917,7 @@
         let creatingNewSection = false;
         let drawerTouchStartY = null;
         let drawerTouchOpen = false;
+        let staffNotesCache = {}; // {sectionId: [{keys,duration}]}
         function updateSectionUIVisibility() {
             const hasSections = Object.keys(savedSections).length > 0;
             if (practiceGrid) {
@@ -1023,6 +1081,25 @@
             } catch (e) {
                 return {};
             }
+        }
+
+        function getStaffNotes(sectionId) {
+            if (staffNotesCache[sectionId]) return staffNotesCache[sectionId];
+            const entry = savedSections[sectionId];
+            if (!entry) return [];
+            const meta = parseNoteMeta(entry.note);
+            const notes = Array.isArray(meta.staffNotes) ? meta.staffNotes : [];
+            staffNotesCache[sectionId] = notes;
+            return notes;
+        }
+
+        function setStaffNotes(sectionId, notes) {
+            const entry = savedSections[sectionId];
+            if (!entry) return;
+            const meta = parseNoteMeta(entry.note);
+            meta.staffNotes = notes;
+            entry.note = JSON.stringify(meta);
+            staffNotesCache[sectionId] = notes;
         }
 
         function syncFormsMetaFromSections() {
@@ -1248,6 +1325,98 @@
                 editList.appendChild(row);
             });
 
+        }
+
+        function renderStaff(sectionId) {
+            const target = document.getElementById(`staff-${sectionId}`);
+            if (!target) return;
+            target.innerHTML = '';
+            const notes = getStaffNotes(sectionId);
+            const VF = Vex.Flow;
+            const renderer = new VF.Renderer(target, VF.Renderer.Backends.SVG);
+            renderer.resize(320, 120);
+            const context = renderer.getContext();
+            const stave = new VF.Stave(10, 20, 300);
+            stave.addClef("treble");
+            stave.setContext(context).draw();
+            if (!notes.length) return;
+            const vfNotes = notes.map(n => new VF.StaveNote({ clef: "treble", keys: n.keys, duration: n.duration }));
+            const voice = new VF.Voice({ num_beats: vfNotes.length, beat_value: 4 });
+            voice.addTickables(vfNotes);
+            const formatter = new VF.Formatter().joinVoices([voice]).format([voice], 260);
+            voice.draw(context, stave);
+        }
+
+        function renderLeadSheet() {
+            if (!leadContainer) return;
+            leadContainer.innerHTML = '';
+            const numbered = computeNumberedSections();
+            if (!numbered.length) {
+                const empty = document.createElement('div');
+                empty.className = 'lead-card';
+                empty.textContent = 'No sections yet';
+                leadContainer.appendChild(empty);
+                return;
+            }
+            numbered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'lead-card';
+                const header = document.createElement('div');
+                header.className = 'lead-header';
+                header.textContent = item.displayLabel;
+                const timeSpan = document.createElement('span');
+                timeSpan.textContent = `${formatTime(item.start)} → ${formatTime(item.end)}`;
+                header.appendChild(timeSpan);
+
+                const controls = document.createElement('div');
+                controls.className = 'lead-controls';
+                const pitchSel = document.createElement('select');
+                ['c/4','d/4','e/4','f/4','g/4','a/4','b/4','c/5','d/5','e/5','f/5','g/5','a/5','b/5'].forEach(p => {
+                    const o = document.createElement('option');
+                    o.value = p;
+                    o.textContent = p.toUpperCase();
+                    pitchSel.appendChild(o);
+                });
+                const durSel = document.createElement('select');
+                [['q','Quarter'],['h','Half'],['w','Whole'],['8','8th']].forEach(([v,t]) => {
+                    const o = document.createElement('option');
+                    o.value = v;
+                    o.textContent = t;
+                    pitchSel.value === '8' ? '8th' : t;
+                    durSel.appendChild(o);
+                });
+                const addBtn = document.createElement('button');
+                addBtn.textContent = 'Add note';
+                addBtn.onclick = async () => {
+                    const notes = [...getStaffNotes(item.id)];
+                    notes.push({ keys: [pitchSel.value], duration: durSel.value });
+                    setStaffNotes(item.id, notes);
+                    await saveSection(item.id, savedSections[item.id]);
+                    renderStaff(item.id);
+                };
+                const clearBtn = document.createElement('button');
+                clearBtn.textContent = 'Clear';
+                clearBtn.onclick = async () => {
+                    setStaffNotes(item.id, []);
+                    await saveSection(item.id, savedSections[item.id]);
+                    renderStaff(item.id);
+                };
+                controls.appendChild(pitchSel);
+                controls.appendChild(durSel);
+                controls.appendChild(addBtn);
+                controls.appendChild(clearBtn);
+
+                const staffDiv = document.createElement('div');
+                staffDiv.className = 'lead-staff';
+                staffDiv.id = `staff-${item.id}`;
+
+                card.appendChild(header);
+                card.appendChild(controls);
+                card.appendChild(staffDiv);
+                leadContainer.appendChild(card);
+
+                renderStaff(item.id);
+            });
         }
 
         async function saveVideoMeta(updates) {
@@ -1515,6 +1684,7 @@
             renderGrids();
             renderEditList();
             updateSectionUIVisibility();
+            renderLeadSheet();
             if (currentMode === 'edit') {
                 setDrawer(true);
             }
@@ -1812,33 +1982,55 @@
             if (mode === 'practice') {
                 tabPractice.classList.add('active');
                 tabEdit.classList.remove('active');
+                if (tabLead) tabLead.classList.remove('active');
                 const showGrid = !!currentSongId && Object.keys(savedSections).length > 0;
                 if (practiceGrid) practiceGrid.classList.toggle('hidden', !showGrid);
                 if (editGrid) editGrid.classList.add('hidden');
                 if (editListWrapper) editListWrapper.classList.add('hidden');
+                if (leadContainer) leadContainer.classList.remove('active');
                 actionsStack.classList.add('hidden');
                 if (practiceBpm) practiceBpm.classList.remove('hidden');
                 if (tapBtn) tapBtn.classList.add('hidden');
                 if (editBpm) editBpm.classList.add('hidden');
                 if (formDrawer) formDrawer.style.display = 'none';
                 setDrawer(false);
-            } else {
+            } else if (mode === 'edit') {
                 tabPractice.classList.remove('active');
                 tabEdit.classList.add('active');
+                if (tabLead) tabLead.classList.remove('active');
                 if (practiceGrid) practiceGrid.classList.add('hidden');
                 if (editGrid) editGrid.classList.remove('hidden');
                 if (editListWrapper) editListWrapper.classList.add('hidden'); // keep list hidden until user opens drawer
+                if (leadContainer) leadContainer.classList.remove('active');
                 actionsStack.classList.remove('hidden');
                 if (practiceBpm) practiceBpm.classList.add('hidden');
                 if (tapBtn) tapBtn.classList.remove('hidden');
                 if (editBpm) editBpm.classList.remove('hidden');
                 if (formDrawer) formDrawer.style.display = 'block';
                 setDrawer(false); // start collapsed in Edit
+            } else if (mode === 'lead') {
+                tabPractice.classList.remove('active');
+                tabEdit.classList.remove('active');
+                if (tabLead) tabLead.classList.add('active');
+                if (practiceGrid) practiceGrid.classList.add('hidden');
+                if (editGrid) editGrid.classList.add('hidden');
+                if (editListWrapper) editListWrapper.classList.add('hidden');
+                if (formDrawer) formDrawer.style.display = 'none';
+                actionsStack.classList.add('hidden');
+                if (practiceBpm) practiceBpm.classList.remove('hidden');
+                if (tapBtn) tapBtn.classList.add('hidden');
+                if (editBpm) editBpm.classList.add('hidden');
+                if (leadContainer) {
+                    leadContainer.classList.add('active');
+                    renderLeadSheet();
+                }
+                setDrawer(false);
             }
         }
 
         tabPractice.addEventListener('click', () => setMode('practice'));
         tabEdit.addEventListener('click', () => setMode('edit'));
+        if (tabLead) tabLead.addEventListener('click', () => setMode('lead'));
         if (drawerHandle) drawerHandle.addEventListener('click', () => {
             const next = !drawerOpen;
             setDrawer(next);
